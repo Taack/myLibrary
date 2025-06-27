@@ -23,6 +23,8 @@ class MyLibraryController implements WebAttributes {
     boolean isAdmin = false
 
 
+    //test
+
     def index() {
         currentUser = springSecurityService.currentUser as User
         isAdmin = currentUser?.authorities?.any { it.authority == 'ROLE_ADMIN' }
