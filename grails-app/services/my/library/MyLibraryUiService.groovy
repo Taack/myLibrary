@@ -3,6 +3,7 @@ package my.library
 import crew.User
 import grails.compiler.GrailsCompileStatic
 import grails.plugin.springsecurity.SpringSecurityService
+import grails.plugin.springsecurity.annotation.Secured
 import grails.validation.Validateable
 import grails.web.api.WebAttributes
 import jakarta.annotation.PostConstruct
@@ -49,9 +50,11 @@ import taack.ui.dsl.filter.expression.Operator
  */
 
 @GrailsCompileStatic
+@Secured(['ROLE_ADMIN'])
 class MyLibraryUiService implements WebAttributes {
     TaackFilterService taackFilterService
 
+    static lazyInit = false
     /**
      * Initializes the service by registering this app's icon and default entry point
      * (the controller index action) with the Taack framework.
@@ -145,7 +148,6 @@ class MyLibraryUiService implements WebAttributes {
             TaackFilter.FilterBuilder filter = taackFilterService.getBuilder(MyLibraryAuthor)
                     .setMaxNumberOfLine(10)
                     .setSortOrder(TaackFilter.Order.ASC, author.lastName_)
-                    .addFilter(buildIsActiveAuthorFilter(author))
 
             if(isSelect) {
                 filter.addFilter(buildIsActiveAuthorFilter(author)) //only displays the authors active for the from to select an author for the books)

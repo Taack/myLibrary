@@ -31,7 +31,7 @@ import taack.ui.dsl.common.ActionIcon
  * return types) and many are annotated with {@code @Transactional} to make sure
  * database changes are committed or rolled back atomically.
  */
-
+@Secured(['ROLE_ADMIN'])
 @GrailsCompileStatic
 class MyLibraryController implements WebAttributes {
     TaackUiService taackUiService
