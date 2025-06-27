@@ -28,45 +28,79 @@ import java.lang.reflect.Field
 import static taack.render.TaackUiService.tr
 import taack.ui.dsl.filter.expression.Operator
 
+/**
+ * UI Service responsible for constructing all UI components (menus, tables, filters, forms)
+ * related to *MyLibrary* domain objects (Authors, Books, Book Instances). This class delegates
+ * rendering to the Taack framework by returning specifiers for each UI block.
+ *
+ * <p>
+ * **Main responsibilities:**
+ * <ul>
+ *   <li>Builds menus for navigating the library system</li>
+ *   <li>Constructs filters for searching and narrowing down entities</li>
+ *   <li>Generates tables for displaying lists of authors, books, and book instances</li>
+ *   <li>Creates forms for creating or editing authors and books</li>
+ *   <li>Provides purchase forms for creating multiple book instances</li>
+ * </ul>
+ *
+ * The UI components are used by {@link MyLibraryController} to handle user interactions.
+ *
+ * All functions are written in Groovy/Grails idiomatic style using `def` or explicit return types for clarity.
+ */
 
 @GrailsCompileStatic
 class MyLibraryUiService implements WebAttributes {
     TaackFilterService taackFilterService
-    SpringSecurityService springSecurityService
 
-
-
-
+    /**
+     * Initializes the service by registering this app's icon and default entry point
+     * (the controller index action) with the Taack framework.
+     *
+     * **How it works:**
+     * - Loads an SVG icon file from resources.
+     * - Calls TaackAppRegisterService.register with the icon and entry point.
+     */
     @PostConstruct
     void init() {
+        //TODO chose picture
         TaackAppRegisterService.register(new TaackApp(MyLibraryController.&index as MC, new String(this.class.getResourceAsStream("/myLibrary/library-svgrepo-com.svg").readAllBytes())))
     }
 
-    boolean isAdmin() {
-        User currentUser = springSecurityService.currentUser as User
-        return currentUser?.authorities?.any { it.authority == 'ROLE_ADMIN' }
-    }
+    /*------------------------------------------------------------*/
+    /* General Menu                                               */
+    /*------------------------------------------------------------*/
 
-    /*--------------- General Menu --------------------------------*/
-
+    /**
+     * Builds the general navigation menu for the library app.
+     *
+     * **Returns:** A UiMenuSpecifier containing:
+     * - A menu item linking to the list of books.
+     * - A menu item linking to the main index page.
+     *
+     * **Purpose:** Allows users to navigate between main screens of the application.
+     */
     UiMenuSpecifier buildMenu() {
         UiMenuSpecifier m = new UiMenuSpecifier()
         m.ui {
-
             menu MyLibraryController.&listBook as MC
             menu MyLibraryController.&index as MC
-            menu MyLibraryController.&listBooksBorrowed as MC
-            menu MyLibraryController.&listBooksCurrentlyBorrowed as MC
-            menu MyLibraryController.&listOfUsers as MC
-            menu MyLibraryController.&listOfRequests as MC
-
         }
     }
 
+    /*------------------------------------------------------------*/
+    /* Author Menu                                                */
+    /*------------------------------------------------------------*/
 
-    /*--------------- Author Menu --------------------------------*/
-
-    //Active filter (checks if the author is active of not)
+    /**
+     * Builds a filter specifier that allows filtering authors based on whether they are active.
+     *
+     * **Parameters:**
+     * - author: An instance of MyLibraryAuthor used to reference the isActive field.
+     *
+     * **Returns:** A UiFilterSpecifier containing:
+     * - A section titled "Filter".
+     * - A boolean filter field labeled "Is Active" comparing the author's isActive property to true.
+     */
     UiFilterSpecifier buildIsActiveAuthorFilter(MyLibraryAuthor author) {
         UiFilterSpecifier isActiveAuthorFilter = new UiFilterSpecifier()
         isActiveAuthorFilter.ui MyLibraryAuthor, {
@@ -76,10 +110,24 @@ class MyLibraryUiService implements WebAttributes {
         }
     }
 
-    //Table display (displays a table with authors according to the users credentials)
+    /**
+     * Builds a table displaying authors with their first name, last name, active status,
+     * and action buttons for viewing, deleting, or reactivating.
+     *
+     * **Parameters:**
+     * - isSelect: If true, builds the table for selection mode (for example, when choosing an author for a book form).
+     *
+     * **Returns:** A UiTableSpecifier with:
+     * - A header including first name and last name (and isActive status if not in select mode).
+     * - For each author:
+     *   - Displays their first and last name.
+     *   - Adds a link action to show author details.
+     *   - In select mode, adds a SELECT action to pick the author.
+     *   - In normal mode, adds DELETE and ACTIVATE buttons to deactivate or reactivate authors.
+     *
+     * **Use case:** Called by controllers to render the main author list or selection modals.
+     */
     UiTableSpecifier buildAuthorTable(Boolean isSelect = false) {
-        boolean isAdmin = isAdmin()
-
 
         MyLibraryAuthor author = new MyLibraryAuthor()
         UiTableSpecifier authorTableSpecifier = new UiTableSpecifier()
@@ -89,19 +137,15 @@ class MyLibraryUiService implements WebAttributes {
                 column {label author.firstName_}
                 label author.lastName_
                 if(!isSelect) {
-                    if(isAdmin) {
-                        label author.isActive_
-                        label "Delete Author" //only for ADMIN
-                    }
+                    label author.isActive_
+                    label "Delete Author"
                 }
             }
 
             TaackFilter.FilterBuilder filter = taackFilterService.getBuilder(MyLibraryAuthor)
                     .setMaxNumberOfLine(10)
                     .setSortOrder(TaackFilter.Order.ASC, author.lastName_)
-            if(!isAdmin) {
-                filter.addFilter(buildIsActiveAuthorFilter(author)) //for admin remove
-            }
+                    .addFilter(buildIsActiveAuthorFilter(author))
 
             if(isSelect) {
                 filter.addFilter(buildIsActiveAuthorFilter(author)) //only displays the authors active for the from to select an author for the books)
@@ -114,20 +158,28 @@ class MyLibraryUiService implements WebAttributes {
                 }
                 rowField authorIterator.lastName_
                 if(!isSelect) {
-                    if(isAdmin) {
-                        rowField authorIterator.isActive_ //for borrower remove
-                        rowColumn {
-                            rowAction ActionIcon.DELETE * IconStyle.SCALE_DOWN, MyLibraryController.&deleteAuthor as MC, authorIterator.id
-                            rowAction ActionIcon.CREATE * IconStyle.SCALE_DOWN, MyLibraryController.&activateAuthor as MC, authorIterator.id
-                            //only for ADMIN
-                        }
+                    rowField authorIterator.isActive_ //for borrower remove
+                    rowColumn {
+                        rowAction ActionIcon.DELETE * IconStyle.SCALE_DOWN, MyLibraryController.&deleteAuthor as MC, authorIterator.id
+                        rowAction ActionIcon.CREATE * IconStyle.SCALE_DOWN, MyLibraryController.&activateAuthor as MC, authorIterator.id
                     }
                 }
             }
         }
     }
 
-    //Form display (displays a from to create an author)
+    /**
+     * Builds a form for creating or editing an author.
+     *
+     * **Parameters:**
+     * - author: Optional existing author to edit; if null, creates a new author object using request parameters.
+     *
+     * **Returns:** A UiFormSpecifier with:
+     * - Fields for first name, last name, date of birth, and active status.
+     * - A form action linking to MyLibraryController.saveAuthor to handle form submission.
+     *
+     * **Use case:** Rendered in modals for author creation or editing.
+     */
     UiFormSpecifier buildAuthorForm(MyLibraryAuthor author) {
         author ?= new MyLibraryAuthor(params)
         UiFormSpecifier createAuthorSpecifier = new UiFormSpecifier()
@@ -142,7 +194,15 @@ class MyLibraryUiService implements WebAttributes {
         }
     }
 
-    //Filter Display (displays a filter to filter the authors according to name)
+    /**
+     * Builds a filter specifier to filter authors by their last name.
+     *
+     * **Returns:** A UiFilterSpecifier with:
+     * - A section titled "Author Filter".
+     * - A text filter field for the author's last name.
+     *
+     * **Use case:** Used on author list screens to narrow down results by name.
+     */
     UiFilterSpecifier buildAuthorFilter() {
         MyLibraryAuthor author = new MyLibraryAuthor()
         UiFilterSpecifier authorFilterSpecifier = new UiFilterSpecifier()
@@ -154,71 +214,48 @@ class MyLibraryUiService implements WebAttributes {
         }
     }
 
+    /*------------------------------------------------------------*/
+    /* Book Menu                                                  */
+    /*------------------------------------------------------------*/
 
-    /*--------------- Book Menu --------------------------------*/
-
-    //isAvailable filter display (filter to check if there are book instances available)
-    UiFilterSpecifier buildIsAvailableBookFilter(MyLibraryBook book) {
-        UiFilterSpecifier isAvailableBookFilter = new UiFilterSpecifier()
-        MyLibraryBookInstance bookInstance = new MyLibraryBookInstance()
-        isAvailableBookFilter.ui MyLibraryBook, {
-            section "Filter", {
-                filterFieldExpressionBool "Is Available", new FilterExpression(true, Operator.EQ, book.listOfBookInstance_,bookInstance.isAvailableB_)
-            }
-        }
-    }
-
-
-    //isActive fitler display (filter to check if the book instances are active
-    UiFilterSpecifier buildIsActiveBookFilter(MyLibraryBook book) {
-        UiFilterSpecifier isActiveBookFilter = new UiFilterSpecifier()
-        MyLibraryBookInstance bookInstance = new MyLibraryBookInstance()
-        isActiveBookFilter.ui MyLibraryBook, {
-            section "Filter", {
-                filterFieldExpressionBool "Is Active", new FilterExpression(true, Operator.EQ, book.listOfBookInstance_,bookInstance.isActive_)
-            }
-        }
-    }
-
-    //Table display (displays the books in a table)
+    /**
+     * Builds the table displaying books with their title, author (optional), number of instances,
+     * number of available instances, and action buttons.
+     *
+     * **Parameters:**
+     * - author: Optional author to restrict the displayed books (shows only books by this author).
+     *
+     * **Returns:** A UiTableSpecifier with:
+     * - A header with columns for title, author, number of instances, and actions.
+     * - For each book:
+     *   - Displays title and author.
+     *   - Shows number of total instances and number available.
+     *   - Includes SHOW, EDIT, DELETE INSTANCE and ADD INSTANCE actions.
+     *
+     * **Use case:** The main book list table.
+     */
     UiTableSpecifier buildBookTable(MyLibraryAuthor author = null) {
-        boolean isAdmin = isAdmin()
-
         MyLibraryBook book = new MyLibraryBook()
         UiTableSpecifier bookTableSpecifier = new UiTableSpecifier()
         bookTableSpecifier.ui {
             header {
                 column {label book.title_}
                 if (!author) {sortableFieldHeader book.author_}
-                if(isAdmin) {
-                    column {
-                        label "Number of instances "//book.numberOfInstances
-                    }
+                column {
+                    label "Number of instances "//book.numberOfInstances
                 }
                 if (!author) {
-                    label "Number of Available Book Instances"
-                    if(isAdmin) {
-                        column {
-                            label "Modify number of Book Instances" //only for ADMIN
-                        }
-                    } else {
-                        column {
-                            label "Request Form" //only for BORROWERS
-                        }
+                    column {
+                        label "Modify number of Book Instances" //only for ADMIN
                     }
                 }
             }
             TaackFilter.FilterBuilder filter =  taackFilterService.getBuilder(MyLibraryBook)
                     .setMaxNumberOfLine(10)
                     .setSortOrder(TaackFilter.Order.ASC, book.title_)
-//                    .addFilter(buildIsActiveBookFilter(book)) //check if isActive
-            if(!isAdmin) {
-                   filter.addFilter(buildIsAvailableBookFilter(book)) //for admin remove
-            }
             if(author) {
                 filter.addRestrictedIds(author.listOfBooks*.id as Long[]) //book.author = author
             }
-
             iterate(
                     filter.build()) { MyLibraryBook bookIterator ->
                 rowColumn {
@@ -227,30 +264,32 @@ class MyLibraryUiService implements WebAttributes {
                     rowField bookIterator.title_
                 }
                 if (!author) {rowField bookIterator.author_}
-                if (isAdmin) {
-                    rowColumn {
-                        bookIterator.getNumberOfInstances()
-                        rowField bookIterator.numberOfInstances_  //for borrower remove
-                    }
+                rowColumn {
+                    bookIterator.getNumberOfInstances()
+                    rowField bookIterator.numberOfInstances_  //for borrower remove
                 }
                 if (!author) {
-                    rowField bookIterator.numberOfBooksBorrowable_
-                    if(isAdmin) {
-                        rowColumn {
-                            rowAction ActionIcon.DELETE * IconStyle.SCALE_DOWN, MyLibraryController.&selectBookInstance as MC, bookIterator.id
-                            rowAction ActionIcon.ADD * IconStyle.SCALE_DOWN, MyLibraryController.&purchaseBook as MC, bookIterator.id
-                        }
-                    } else {
-                        rowColumn {
-                            rowAction ActionIcon.CREATE * IconStyle.SCALE_DOWN, MyLibraryController.&requestBookInstance as MC, bookIterator.id
-                        }
+                    rowColumn {
+                        rowAction ActionIcon.DELETE * IconStyle.SCALE_DOWN, MyLibraryController.&selectBookInstance as MC, bookIterator.id
+                        rowAction ActionIcon.ADD * IconStyle.SCALE_DOWN, MyLibraryController.&purchaseBook as MC, bookIterator.id
                     }
                 }
             }
         }
     }
 
-    //From display (displays a from to add books)
+    /**
+     * Builds a form for creating or editing a book.
+     *
+     * **Parameters:**
+     * - book: Optional existing book to edit; if null, creates a new book object using request parameters.
+     *
+     * **Returns:** A UiFormSpecifier with:
+     * - Fields for title, author (ajax field selector), number of pages, and description.
+     * - A form action linking to MyLibraryController.saveBook.
+     *
+     * **Use case:** Rendered in modals for book creation or editing.
+     */
     UiFormSpecifier buildBookForm(MyLibraryBook book) {
         book ?= new MyLibraryBook(params)
         UiFormSpecifier bookFormSpecifier = new UiFormSpecifier()
@@ -265,7 +304,15 @@ class MyLibraryUiService implements WebAttributes {
         }
     }
 
-    //Filter display (filters according to tile books)
+    /**
+     * Builds a filter specifier for filtering books by their title.
+     *
+     * **Returns:** A UiFilterSpecifier with:
+     * - A section titled "Book Filter".
+     * - A text filter field for the book title.
+     *
+     * **Use case:** Used in book list views to narrow down results by title.
+     */
     UiFilterSpecifier buildBookFilter() {
         MyLibraryBook book = new MyLibraryBook()
         UiFilterSpecifier bookFilterSpecifier = new UiFilterSpecifier()
@@ -277,25 +324,38 @@ class MyLibraryUiService implements WebAttributes {
         }
     }
 
-    //Filter to select the book Instances that are available
-    UiFilterSpecifier buildIsAvailableBookInstances(MyLibraryBook book) {
-        MyLibraryBookInstance bookInstance = new MyLibraryBookInstance()
-        UiFilterSpecifier bookInstanceFilterSpecifier = new UiFilterSpecifier()
-        bookInstanceFilterSpecifier.sec MyLibraryBookInstance, {
-            filterFieldExpressionBool new FilterExpression(true, Operator.EQ, bookInstance.isAvailableB_)    //new FilterExpression(true, Operator.EQ, bookInstance.isAvailable_)
-        }
-    }
-
-    //Filter to select the book Instances that are Active
+    /**
+     * Builds a filter to check if book instances are active.
+     *
+     * **Parameters:**
+     * - book: The book whose instances to filter.
+     *
+     * **Returns:** A UiFilterSpecifier with:
+     * - A section titled "Filter".
+     * - A boolean filter field labeled "Is Active", comparing the isActive status of instances to true.
+     *
+     * **Use case:** Used in book management screens to show only active copies.
+     */
     UiFilterSpecifier buildIsActiveBookInstances(MyLibraryBook book) {
         MyLibraryBookInstance bookInstance = new MyLibraryBookInstance()
         UiFilterSpecifier bookInstanceFilterSpecifier = new UiFilterSpecifier()
         bookInstanceFilterSpecifier.sec MyLibraryBookInstance, {
-            filterFieldExpressionBool new FilterExpression(true, Operator.EQ, bookInstance.isActive_)    //new FilterExpression(true, Operator.EQ, bookInstance.isAvailable_)
+            filterFieldExpressionBool new FilterExpression(true, Operator.EQ, bookInstance.isActive_)
         }
     }
 
-    //Form for purchase display
+    /**
+     * Builds a form to specify the number of physical copies (book instances) to purchase for a book.
+     *
+     * **Parameters:**
+     * - book: The book for which to purchase instances.
+     *
+     * **Returns:** A UiFormSpecifier with:
+     * - A numeric field for "Number of Instances".
+     * - A form action linking to MyLibraryController.purchaseAndSaveBook to handle the purchase.
+     *
+     * **Use case:** Rendered in modals for librarians to add copies to library inventory.
+     */
     UiFormSpecifier buildBookPurchase(MyLibraryBook book) {
         NumberForInstances numberForInstances = new NumberForInstances()
         book ?= new MyLibraryBook(params)
@@ -308,7 +368,22 @@ class MyLibraryUiService implements WebAttributes {
         }
     }
 
-    //Table (displays all the bookInstances of a book in a table)
+    /**
+     * Builds a table displaying all physical instances of a given book.
+     *
+     * **Parameters:**
+     * - book: The book whose instances to display.
+     * - isOne: If true, enables selection mode (e.g. for lending). If false, shows delete actions.
+     * - bookInstance: Optional instance for context.
+     *
+     * **Returns:** A UiTableSpecifier with:
+     * - A header showing "Serial Number" and action columns (Select or Delete).
+     * - For each book instance:
+     *   - Displays the serial number.
+     *   - Shows SELECT or DELETE action depending on `isOne`.
+     *
+     * **Use case:** Used to manage copies of a book or select one for borrowing.
+     */
     UiTableSpecifier buildInstanceBookTable(MyLibraryBook book, isOne = false, MyLibraryBookInstance bookInstance = null) {
         UiTableSpecifier table = new UiTableSpecifier()
         bookInstance ?= new MyLibraryBookInstance()
@@ -329,11 +404,10 @@ class MyLibraryUiService implements WebAttributes {
 
             TaackFilter.FilterBuilder filter = taackFilterService.getBuilder(MyLibraryBookInstance).addRestrictedIds(book.listOfBookInstance*.id as Long[])
             filter.addFilter(buildIsActiveBookInstances(book))
-            filter.addFilter(buildIsAvailableBookInstances(book))
 
             iterate(
                     filter.build()) { MyLibraryBookInstance bookInstanceIterator ->
-                    rowField bookInstanceIterator.serialNumber_
+                rowField bookInstanceIterator.serialNumber_
                 rowColumn {
                     if(!isOne) {
                         rowAction ActionIcon.DELETE * IconStyle.SCALE_DOWN, MyLibraryController.&deleteBookInstances as MC, bookInstanceIterator.id, [bookId:book.id]
@@ -345,186 +419,7 @@ class MyLibraryUiService implements WebAttributes {
         }
     }
 
-    //Request book Form for request to borrow display
-    UiFormSpecifier buildRequestBookForm(MyLibraryBook book) {
-        User user = springSecurityService.currentUser as User
-
-        MyLibraryBorrowed borrowed = new MyLibraryBorrowed()
-        borrowed.user = user
 
 
-        book ?= new MyLibraryBook(params)
-        UiFormSpecifier requestBookFormSpecifier = new UiFormSpecifier()
-
-        //MyLibraryBorrowed borrowed = MyLibraryBorrowed.findByUser(user)
-
-        requestBookFormSpecifier.ui borrowed, {
-            section "Request Book Form", {
-                hiddenField borrowed.user_ //pass paramretes in the form witout the user seeing
-                field borrowed.requestDate_
-                ajaxField borrowed.bookInstance_, MyLibraryController.&selectBookInstanceOne as MC, book.id
-
-            }
-            formAction MyLibraryController.&requestBookForm as MC
-        }
-    }
-
-    /*--------------- History & Borrowing Menu --------------------------------*/
-
-    UiTableSpecifier buildUserBorrowsTable(isCurrently = false, User showUser = null, isUser = false) {
-        Boolean isAdmin = isAdmin()
-        MyLibraryBook book = new MyLibraryBook()
-        MyLibraryBorrowed borrowed = new MyLibraryBorrowed()
-        UiTableSpecifier buildUserBorrowsSpecifier = new UiTableSpecifier()
-        MyLibraryBookInstance bookInstance = new MyLibraryBookInstance()
-
-        buildUserBorrowsSpecifier.ui {
-            header {
-                sortableFieldHeader borrowed.bookInstance_,bookInstance.book_,book.title_
-                sortableFieldHeader borrowed.bookInstance_,bookInstance.book_,book.author_
-                if (isCurrently) {label borrowed.statusOfApproval_}
-                label borrowed.requestDate_
-                label borrowed.approvalDate_
-                if (isCurrently && !isAdmin) {
-                    column {
-                        label "Return Book"
-                    }
-                }
-                if(isAdmin) {
-                    column {
-                        label borrowed.user_
-                    }
-                    if (!showUser) {
-                        label "Approve Book"
-                    }
-                }
-            }
-
-
-            User currentUser = springSecurityService.currentUser as User
-            if (showUser) {
-                currentUser = showUser
-            }
-
-            TaackFilter.FilterBuilder filter = taackFilterService.getBuilder(MyLibraryBorrowed)
-                    .setMaxNumberOfLine(10)
-                    .setSortOrder(TaackFilter.Order.ASC, borrowed.bookInstance_,bookInstance.book_,book.title_)//borrowed.bookInstance_) //add book.title_     borrowed.bookInstance_,book.title_
-
-            if(!isUser || showUser) {
-                filter.addFilter(new FilterExpression(currentUser, Operator.EQ, borrowed.user_)) //check if this is right
-            }
-            if(isCurrently) { //no return date
-                filter.addFilter(new FilterExpression(null, Operator.EQ, borrowed.returnDate_))
-            } else { //has return date
-                filter.addFilter(new FilterExpression(null, Operator.NE, borrowed.returnDate_))
-            }
-
-            iterate(
-                    filter.build()) { MyLibraryBorrowed borrowedIterator ->
-                rowColumn {
-                    rowAction ActionIcon.SHOW * IconStyle.SCALE_DOWN, MyLibraryController.&showBorrowed as MC, borrowedIterator.id
-                    rowField borrowedIterator.bookInstance.book.title
-                }
-                    rowField borrowedIterator.bookInstance.book.author.toString()
-
-                if(isCurrently) {rowField borrowedIterator.statusOfApproval_}
-                rowField borrowedIterator.requestDate_
-                rowField borrowedIterator.approvalDate_
-                if(isCurrently && !isAdmin && borrowedIterator.approvalDate_) {
-                    rowColumn {
-                        rowAction ActionIcon.DELETE * IconStyle.SCALE_DOWN, MyLibraryController.&
-                                returnBook as MC, borrowedIterator.id
-                    }
-                }
-                if(isAdmin) {
-                    rowColumn {
-                        rowField borrowedIterator.user.username_
-                    }
-                    if(!showUser) {
-                        rowColumn {
-                            rowAction ActionIcon.DELETE * IconStyle.SCALE_DOWN, MyLibraryController.&approveBook as MC, borrowedIterator.id
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    UiFilterSpecifier buildUserBorrowsFilter() {
-        MyLibraryBook book = new MyLibraryBook()
-        UiFilterSpecifier UserBorrowsFilterSpecifier = new UiFilterSpecifier()
-        MyLibraryBorrowed borrowed = new MyLibraryBorrowed()
-        MyLibraryBookInstance bookInstance = new MyLibraryBookInstance()
-
-        UserBorrowsFilterSpecifier.ui MyLibraryBorrowed, {
-            section "Borrows Filter", {
-                filterField borrowed.bookInstance_,bookInstance.book_,book.title_
-            }
-        }
-    }
-
-
-    //make in one
-    UiFormSpecifier buildRequestReturnBookForm(MyLibraryBorrowed borrowed) {
-        UiFormSpecifier requestBookFormSpecifier = new UiFormSpecifier()
-
-
-        requestBookFormSpecifier.ui borrowed, {
-            section "Request Return Book Form", {
-                field borrowed.returnDate_
-            }
-            formAction MyLibraryController.&requestReturnBookForm as MC   //save book form
-        }
-    }
-
-
-    /*--------------- Users Menu --------------------------------*/
-
-    UiTableSpecifier buildUsersTable() {
-        MyLibraryBorrowed borrowed = new MyLibraryBorrowed()
-        UiTableSpecifier buildUsersSpecifier = new UiTableSpecifier()
-        User user = new User()
-
-        buildUsersSpecifier.ui {
-            header {
-                label user.username_
-                label "Authorities"
-//                label "Preview User"
-                label "Deactivate User"
-            }
-
-            TaackFilter taackFilter = taackFilterService.getBuilder(User)
-                    .setSortOrder(TaackFilter.Order.ASC, user.username_)
-                    .setMaxNumberOfLine(10).build()
-//                    .addFilter(new FilterExpression(currentUser, Operator.EQ, borrowed.user_)) //check if this is right
-//                    .addRestrictedIds()
-
-            iterate taackFilter, {User userIterator ->
-                rowColumn {
-                    rowAction ActionIcon.SHOW * IconStyle.SCALE_DOWN, MyLibraryController.&showUser as MC, userIterator.id
-                    rowField userIterator.username_
-                }
-                rowField userIterator.authorities_
-                rowColumn {
-                    rowAction ActionIcon.DELETE * IconStyle.SCALE_DOWN, MyLibraryController.&deleteUser as MC, userIterator.id
-                }
-            }
-        }
-    }
-
-    UiFormSpecifier buildApproveBookTable(MyLibraryBorrowed borrowed) {
-        UiFormSpecifier approveBookSpecifier = new UiFormSpecifier()
-
-        approveBookSpecifier.ui borrowed, {
-            section "Approve Book Form", {
-                field borrowed.approvalDate_
-                field borrowed.statusOfApproval_
-            }
-            formAction MyLibraryController.&saveApprovalBookForm as MC   //save book form
-        }
-
-    }
-
- //add filter
 }
 

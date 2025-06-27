@@ -17,10 +17,6 @@ class MyLibraryBook {
 
     static hasMany = [listOfBookInstance: MyLibraryBookInstance]
 
-    int getNumberOfBooksBorrowable() {
-        return MyLibraryBookInstance.countByIsAvailableBAndIsActiveAndBook(true, true, this)
-    }
-
     int getNumberOfInstances() {
         if (!listOfBookInstance) { return 0}
         count = listOfBookInstance.count {it.isActive} as int

@@ -12,29 +12,53 @@ import taack.render.TaackUiService
 import taack.ui.dsl.*
 import taack.ui.dsl.common.ActionIcon
 
+/**
+ * Controller responsible for all UI interactions related to authors and books
+ * managed by *MyLibrary*. Almost every action simply delegates the UI building
+ * to {@link MyLibraryUiService} and lets *Taack UI* handle the rendering.
+ *
+ * <p>
+ * Main responsibilities:
+ * <ul>
+ *   <li>Display tables and filters for authors and books</li>
+ *   <li>Open modal forms for creating/editing entities</li>
+ *   <li>Persist changes through {@link TaackSaveService}</li>
+ *   <li>Soft‑delete (deactivate) and reactivate entities</li>
+ *   <li>Create physical book instances in bulk</li>
+ * </ul>
+ *
+ * All actions are written in Groovy/Grails style ("def" instead of explicit
+ * return types) and many are annotated with {@code @Transactional} to make sure
+ * database changes are committed or rolled back atomically.
+ */
+
 @GrailsCompileStatic
-@Secured(['ROLE_ADMIN','ROLE_BORROWER'])
 class MyLibraryController implements WebAttributes {
     TaackUiService taackUiService
     MyLibraryUiService myLibraryUiService
     TaackSaveService taackSaveService
-    SpringSecurityService springSecurityService
-    User currentUser
-    boolean isAdmin = false
 
+    /*------------------------------------------------------------*/
+    /* General actions                                            */
+    /*------------------------------------------------------------*/
 
-    //test
-
+    /**
+     * Landing action of the controller. Immediately redirects to {@link #listAuthor()} ‑
+     * our default screen that lists all authors.
+     */
     def index() {
-        currentUser = springSecurityService.currentUser as User
-        isAdmin = currentUser?.authorities?.any { it.authority == 'ROLE_ADMIN' }
         redirect action: 'listAuthor'
     }
 
-    /*--------------- Author Menu --------------------------------*/
+    /*------------------------------------------------------------*/
+    /* Author menu                                                */
+    /*------------------------------------------------------------*/
 
-
-
+    /**
+     * Builds and displays the *Author* table together with a filter bar. A
+     * *Create* icon is added to the table header that opens the {@link #createAuthor(MyLibraryAuthor)}
+     * modal.
+     */
     def listAuthor() {
         UiTableSpecifier tableAuthorSpecifier = myLibraryUiService.buildAuthorTable(false)
         UiFilterSpecifier filterAuthorSpecifier = myLibraryUiService.buildAuthorFilter()
@@ -42,14 +66,18 @@ class MyLibraryController implements WebAttributes {
         taackUiService.show(new UiBlockSpecifier().ui {
             tableFilter filterAuthorSpecifier, tableAuthorSpecifier, {
                 menuIcon ActionIcon.CREATE, this.&createAuthor as MethodClosure
-                //menuIcon ActionIcon.CREATE, this.&createAuthor as MethodClosure //if isAcative = false
             }
         }, myLibraryUiService.buildMenu())
     }
 
-    @Secured(['ROLE_ADMIN'])
+    /**
+     * Opens a modal form (built by {@link MyLibraryUiService#buildAuthorForm(MyLibraryAuthor)})
+     * to create or edit an author.
+     *
+     * @param author optional existing author – will be pre‑filled when editing
+     */
     def createAuthor(MyLibraryAuthor author) {
-        UiFormSpecifier formAuthorSpecifier = myLibraryUiService.buildAuthorForm author
+        UiFormSpecifier formAuthorSpecifier = myLibraryUiService.buildAuthorForm(author)
 
         taackUiService.show(new UiBlockSpecifier().ui {
             modal {
@@ -58,65 +86,89 @@ class MyLibraryController implements WebAttributes {
         })
     }
 
-    @Secured(['ROLE_ADMIN']) //ionly foor admin
+    /**
+     * Soft‑deletes the given author by setting {@code isActive = false}. The
+     * record remains in the database for auditing purposes.
+     *
+     * @param author the author to deactivate
+     */
     @Transactional
     def deleteAuthor(MyLibraryAuthor author) {
         author.isActive = false
         redirect action: 'listAuthor'
     }
 
-    @Secured(['ROLE_ADMIN']) //only for admin
+    /**
+     * Reactivates a previously deactivated author.
+     *
+     * @param author the author to reactivate
+     */
     @Transactional
     def activateAuthor(MyLibraryAuthor author) {
+        //TODO: reactivate the author using isActive then redirect to index.
         author.isActive = true
         redirect action: 'listAuthor'
     }
 
+    /**
+     * Persists a new or edited author and reloads the page, or re‑renders the
+     * form with validation errors if saving fails. Delegated to
+     * {@link TaackSaveService}.
+     */
     @Transactional
     def saveAuthor() {
         taackSaveService.saveThenReloadOrRenderErrors(MyLibraryAuthor)
     }
 
+    /**
+     * Shows a read‑only detail view for the selected author, followed by the
+     * list of books written by that author.
+     *
+     * @param author the author whose details are to be displayed
+     */
     def showAuthor(MyLibraryAuthor author) {
-
-        //show book table
-        UiTableSpecifier tableBookSpecifier = myLibraryUiService.buildBookTable author
+        UiTableSpecifier tableBookSpecifier = myLibraryUiService.buildBookTable(author)
         UiFilterSpecifier filterBookSpecifier = myLibraryUiService.buildBookFilter()
+        UiShowSpecifier showBookSpecifier = new UiShowSpecifier()
 
-
-        UiShowSpecifier showSpec = new UiShowSpecifier()
-
-        showSpec.ui(author, {
-
+        showBookSpecifier.ui(author, {
             fieldLabeled author.firstName_
             fieldLabeled author.lastName_
             fieldLabeled author.dateOfBirth_
-            fieldLabeled author.isActive_ //only for admin
-
+            fieldLabeled author.isActive_
         })
+        //TODO: put this in the ui services for persistency purposes ??
 
         taackUiService.show(new UiBlockSpecifier().ui {
             modal {
-                show showSpec
+                show showBookSpecifier
                 tableFilter filterBookSpecifier, tableBookSpecifier
             }
         })
     }
 
+    /**
+     * Renders a modal containing a filterable/selectable author table so the
+     * caller can pick an author and have its ID returned via AJAX.
+     */
     def selectAuthor() {
-        UiTableSpecifier t = myLibraryUiService.buildAuthorTable true
-        UiFilterSpecifier f = myLibraryUiService.buildAuthorFilter()
-        taackUiService.show new UiBlockSpecifier().ui {
+        UiTableSpecifier tableAuthorSpecifier = myLibraryUiService.buildAuthorTable(true)
+        UiFilterSpecifier filterAuthorSpecifier = myLibraryUiService.buildAuthorFilter()
+        taackUiService.show(new UiBlockSpecifier().ui {
             modal {
-                tableFilter f, t
+                tableFilter filterAuthorSpecifier, tableAuthorSpecifier
             }
-        }
+        })
     }
 
+    /*------------------------------------------------------------*/
+    /* Book menu                                                  */
+    /*------------------------------------------------------------*/
 
-
-    /*--------------- Book Menu --------------------------------*/
-
+    /**
+     * Shows all books in a table with an accompanying filter bar. Includes a
+     * *Create* icon that opens the {@link #createBook(MyLibraryBook)} modal.
+     */
     def listBook() {
         UiTableSpecifier tableBookSpecifier = myLibraryUiService.buildBookTable()
         UiFilterSpecifier filterBookSpecifier = myLibraryUiService.buildBookFilter()
@@ -128,9 +180,14 @@ class MyLibraryController implements WebAttributes {
         }, myLibraryUiService.buildMenu())
     }
 
-    @Secured(['ROLE_ADMIN'])
+    /**
+     * Opens a modal for creating or editing a book. The actual form is provided
+     * by {@link MyLibraryUiService#buildBookForm(MyLibraryBook)}.
+     *
+     * @param book optional existing book for edit mode
+     */
     def createBook(MyLibraryBook book) {
-        UiFormSpecifier tableFormSpecifier = myLibraryUiService.buildBookForm book
+        UiFormSpecifier tableFormSpecifier = myLibraryUiService.buildBookForm(book)
 
         taackUiService.show new UiBlockSpecifier().ui {
             modal {
@@ -139,32 +196,43 @@ class MyLibraryController implements WebAttributes {
         }
     }
 
-
-    @Secured(['ROLE_ADMIN'])
+    /**
+     * Opens a modal form that lets the librarian specify how many physical
+     * copies of a given book to purchase (i.e. create). Internally delegates to
+     * {@link MyLibraryUiService#buildBookPurchase(MyLibraryBook)}.
+     */
     def purchaseBook(MyLibraryBook book) {
-        UiFormSpecifier tableAddSpecifier = myLibraryUiService.buildBookPurchase book
+        UiFormSpecifier tableAddBookInstanceSpecifier = myLibraryUiService.buildBookPurchase(book)
 
         taackUiService.show new UiBlockSpecifier().ui {
             modal {
-                form tableAddSpecifier
+                form tableAddBookInstanceSpecifier
             }
         }
     }
 
-
+    /**
+     * Creates the requested number of {@link MyLibraryBookInstance}s for the
+     * specified book and reloads the surrounding UI block via AJAX.
+     *
+     * @param numberForInstances wrapper containing the desired number of copies
+     * @param book               the logical book entity to which copies belong
+     */
     @Transactional
     def purchaseAndSaveBook(NumberForInstances numberForInstances, MyLibraryBook book) {
-        for (int i =0; i < (numberForInstances.numberOfInstances) as Integer; i++) {
+        for (int i = 0; i < (numberForInstances.numberOfInstances) as Integer; i++) {
             MyLibraryBookInstance newBookInstance = new MyLibraryBookInstance()
             newBookInstance.book = book
-            //newBookInstance.save(flush: "")
-
             book.addToListOfBookInstance(newBookInstance)
         }
         taackUiService.ajaxReload()
     }
 
-    @Secured(['ROLE_ADMIN'])
+
+    //TODO implement or erase
+    /**
+     * Soft‑deletes a book to let the user select specific instances to delete.
+     */
     @Transactional
     def deleteBook(MyLibraryBook book) {
         //create a from to select the bookInstances to delete
@@ -172,28 +240,39 @@ class MyLibraryController implements WebAttributes {
         redirect action: 'listBook'
     }
 
+    /**
+     * Saves a book entity (new or edited) and either reloads the page or
+     * re‑renders the form with validation errors.
+     */
     @Transactional
     def saveBook() {
         taackSaveService.saveThenReloadOrRenderErrors(MyLibraryBook)
     }
 
+    /**
+     * Displays read‑only details of a single book inside a modal.
+     *
+     * @param book the book whose details are requested
+     */
     def showBook(MyLibraryBook book) {
-        UiShowSpecifier showSpec = new UiShowSpecifier().ui(book, {
+        UiShowSpecifier showBookSpecifier = new UiShowSpecifier().ui(book, {
             fieldLabeled book.title_
             fieldLabeled book.author_
             fieldLabeled book.numberOfPages_
             fieldLabeled book.description_
-            fieldLabeled book.numberOfBooksBorrowable_
-            fieldLabeled book.numberOfInstances_    //only admins
+            fieldLabeled book.numberOfInstances_
         })
 
         taackUiService.show(new UiBlockSpecifier().ui {
             modal {
-                show showSpec
+                show showBookSpecifier
             }
         })
     }
 
+    /**
+     * Opens a modal selector listing all books.
+     */
     def selectBook() {
         UiTableSpecifier tableBookSpecifier = myLibraryUiService.buildBookTable()
         UiFilterSpecifier filterBookSpecifier = myLibraryUiService.buildBookFilter()
@@ -204,40 +283,34 @@ class MyLibraryController implements WebAttributes {
         }
     }
 
+    /**
+     * Opens a modal that shows every physical instance of a given book. The
+     * list is filterable and selectable so the librarian can pick the exact
+     * copy to lend or delete.
+     */
     def selectBookInstance(MyLibraryBook book) {
-        UiTableSpecifier bookInstanceTable = myLibraryUiService.buildInstanceBookTable(book)
+        UiTableSpecifier bookInstanceTableSpecifier = myLibraryUiService.buildInstanceBookTable(book)
 
         taackUiService.show new UiBlockSpecifier().ui {
             modal true, {
-                table bookInstanceTable
-
-
+                table bookInstanceTableSpecifier
             }
         }
     }
 
-    @Secured(['ROLE_ADMIN'])
+    /**
+     * Soft‑deletes (deactivates) a single physical book instance and refreshes
+     * the surrounding tables to reflect the change.
+     *
+     * @param bookInstance the specific physical copy to deactivate
+     */
     @Transactional
     def deleteBookInstances(MyLibraryBookInstance bookInstance) {
-        MyLibraryBook book = MyLibraryBook.get(params.long('bookId')) //get bookInstance
-//        book.listOfBookInstance.remove(bookInstance)
-//        bookInstance.delete(flush: true)
-        bookInstance.isActive = false
-//        bookInstance.isAvailableB = false
-        bookInstance.save(flush: true, validate: false)
+        MyLibraryBook book = MyLibraryBook.get(params.long('bookId'))
         UiTableSpecifier bookInstanceTable = myLibraryUiService.buildInstanceBookTable(book)
-//
-//        taackSaveService.displayBlockOrRenderErrors(bookInstance, new UiBlockSpecifier().ui {
-//                closeModal(bookInstance.id, bookInstance.toString())})
-//
-//
-//        //taackSaveService.saveThenReloadOrRenderErrors()
-//        // the page is closed but not reopen reload the listBook and open the modal
-//        taackUiService.show new UiBlockSpecifier().ui {
-//            modal {
-//                table bookInstanceTable
-//            }
-//        }
+
+        bookInstance.isActive = false
+        bookInstance.save(flush: true, validate: false)
 
         taackUiService.show new UiBlockSpecifier().ui {
             closeModalAndUpdateBlock {
@@ -247,201 +320,11 @@ class MyLibraryController implements WebAttributes {
                 ) {
                     menuIcon ActionIcon.CREATE, this.&createBook as MethodClosure
                 }
-
                 modal {
-//                    show new UiShowSpecifier().ui(null) {
-//                        field "Book instance deleted successfully"
-//                    }
                     table bookInstanceTable
                 }
             }
         }
     }
 
-    def requestBookInstance(MyLibraryBook book){
-
-        UiFormSpecifier requestBookInstanceForm = myLibraryUiService.buildRequestBookForm(book)
-
-        taackUiService.show new UiBlockSpecifier().ui {
-            modal {
-                form requestBookInstanceForm
-            }
-        }
-    }
-
-    def selectBookInstanceOne(MyLibraryBook book) {
-
-        UiTableSpecifier bookInstanceTable = myLibraryUiService.buildInstanceBookTable(book, true)
-
-        taackUiService.show new UiBlockSpecifier().ui {
-            modal {
-                table bookInstanceTable
-
-
-            }
-        }
-    }
-
-    @Transactional
-    def requestBookForm() {
-        MyLibraryBorrowed borrowed = taackSaveService.save(MyLibraryBorrowed)
-        println("--------------------------------------------------------------------------------")
-        println(borrowed.user_)
-        borrowed.bookInstance?.isAvailableB = false
-        taackSaveService.redirectOrRenderErrors(borrowed)
-    }// action with information
-
-
-    /*--------------- History Menu --------------------------------*/
-
-    @Secured(['ROLE_BORROWER'])
-    def listBooksBorrowed() {
-        //display a table with all the borrowed of the user that have been return
-        UiTableSpecifier tableUserBorrowsSpecifier = myLibraryUiService.buildUserBorrowsTable()
-        UiFilterSpecifier filterUserBorrowsSpecifier = myLibraryUiService.buildUserBorrowsFilter()
-
-        taackUiService.show(new UiBlockSpecifier().ui {
-            tableFilter filterUserBorrowsSpecifier, tableUserBorrowsSpecifier
-        }, myLibraryUiService.buildMenu())
-    }
-
-    def showBorrowed(MyLibraryBorrowed borrowed) {
-        //show borrwed hotristy maybe  table
-//        UiTableSpecifier tableBorrowedSpecifier = myLibraryUiService.buildBorrowedTable()
-//        UiFilterSpecifier filterBorrowedSpecifier = myLibraryUiService.buildBorrowedFilter()
-
-
-        UiShowSpecifier showSpec = new UiShowSpecifier()
-
-        showSpec.ui(borrowed, {
-
-            fieldLabeled borrowed.bookInstance.book.title_
-            fieldLabeled borrowed.bookInstance.book.author_
-            fieldLabeled borrowed.user.username_
-            fieldLabeled borrowed.statusOfApproval_
-            fieldLabeled borrowed.requestDate_
-            fieldLabeled borrowed.approvalDate_
-            fieldLabeled borrowed.returnDate_
-
-        })
-
-        taackUiService.show(new UiBlockSpecifier().ui {
-            modal {
-                show showSpec
-//                tableFilter filterBookSpecifier, tableBookSpecifier
-            }
-        })
-    }
-
-
-    /*--------------- Borrowed Menu --------------------------------*/
-
-    @Secured(['ROLE_BORROWER'])
-    def listBooksCurrentlyBorrowed() {
-        //display a table with all the currently borrowed of the user
-        UiTableSpecifier tableUserBorrowsSpecifier = myLibraryUiService.buildUserBorrowsTable(true)
-        UiFilterSpecifier filterUserBorrowsSpecifier = myLibraryUiService.buildUserBorrowsFilter()
-
-        taackUiService.show(new UiBlockSpecifier().ui {
-            tableFilter filterUserBorrowsSpecifier, tableUserBorrowsSpecifier
-        }, myLibraryUiService.buildMenu())
-    }
-
-    def returnBook(MyLibraryBorrowed borrowed) {
-        UiFormSpecifier requestReturnBookInstanceForm = myLibraryUiService.buildRequestReturnBookForm(borrowed)
-
-        taackUiService.show new UiBlockSpecifier().ui {
-            modal {
-                form requestReturnBookInstanceForm
-            }
-        }
-    }
-
-    @Transactional
-    def requestReturnBookForm() {
-        MyLibraryBorrowed borrowed = taackSaveService.save(MyLibraryBorrowed)
-        borrowed.bookInstance?.isAvailableB = true
-        taackSaveService.redirectOrRenderErrors(borrowed)
-    }
-
-
-    /*--------------- Borrowers Menu --------------------------------*/
-
-    @Secured(['ROLE_ADMIN'])
-    def listOfUsers() {
-        UiTableSpecifier tableUsersSpecifier = myLibraryUiService.buildUsersTable()
-
-        taackUiService.show(new UiBlockSpecifier().ui {
-            table tableUsersSpecifier
-        }, myLibraryUiService.buildMenu())
-    }
-
-    def showUser(User user) {
-        UiShowSpecifier showSpec = new UiShowSpecifier()
-
-        showSpec.ui(user, {
-            fieldLabeled user.username_
-            fieldLabeled user.firstName_
-            fieldLabeled user.lastName_
-            fieldLabeled user.authorities_ //change
-        })
-
-        UiTableSpecifier userBorrowsSpecifier = myLibraryUiService.buildUserBorrowsTable(false, user)
-        UiFilterSpecifier userBorrowsFilterSpecifier = myLibraryUiService.buildUserBorrowsFilter()
-        UiTableSpecifier userBorrowsCurrentlySpecifier = myLibraryUiService.buildUserBorrowsTable(true, user)
-
-        taackUiService.show(new UiBlockSpecifier().ui {
-            modal {
-                show showSpec
-                tableFilter userBorrowsFilterSpecifier, userBorrowsSpecifier
-                tableFilter userBorrowsFilterSpecifier, userBorrowsCurrentlySpecifier
-            }
-        })
-
-    }
-
-    @Secured(['ROLE_ADMIN'])
-    def deleteUser(User user) {
-        user.enabled = false //have to check if the enable changes the display of users
-    }
-
-
-    /*--------------- Requests Menu --------------------------------*/
-
-    @Secured(['ROLE_ADMIN'])
-    def listOfRequests() {
-        UiTableSpecifier tableUserBorrowsSpecifier = myLibraryUiService.buildUserBorrowsTable(true, null, true)
-        UiFilterSpecifier filterUserBorrowsSpecifier = myLibraryUiService.buildUserBorrowsFilter()
-
-        taackUiService.show(new UiBlockSpecifier().ui {
-            tableFilter filterUserBorrowsSpecifier, tableUserBorrowsSpecifier
-        }, myLibraryUiService.buildMenu())
-    }
-
-    def approveBook(MyLibraryBorrowed borrowed) {
-        UiFormSpecifier approveBookSpecifier = myLibraryUiService.buildApproveBookTable(borrowed)
-
-        taackUiService.show(new UiBlockSpecifier().ui {
-            modal {
-                form approveBookSpecifier
-            }
-        })
-    }
-
-    @Transactional
-    def saveApprovalBookForm() {
-        Calendar cal = Calendar.getInstance()
-        cal.set(999999, Calendar.DECEMBER, 31)
-        Date date = cal.time
-        MyLibraryBorrowed borrowed = taackSaveService.save(MyLibraryBorrowed)
-        if(borrowed.statusOfApproval == ApprovalStatus.REJECTED) {
-            borrowed.returnDate = date
-        }
-        taackSaveService.redirectOrRenderErrors(borrowed)
-    }
-
 }
-
-
-
-
