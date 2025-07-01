@@ -21,5 +21,17 @@ import taack.ast.annotation.TaackFieldEnum
 @GrailsCompileStatic
 @TaackFieldEnum
 class MyLibraryAuthor {
-    // TODO 1.1: Define fields including listOfBooks initialized as [], implement hasMany, and toString() as described above. [TODO 2 is in MyLii
+    String firstName
+    String lastName
+    Date dateOfBirth
+    List<MyLibraryBook> listOfBooks //(1)
+    Boolean isActive = true //(2)
+
+    static constraints = {}
+
+    static hasMany = [listOfBooks: MyLibraryBook] //(3)
+
+    String toString() {
+        return firstName + ' ' + lastName
+    }
 }
