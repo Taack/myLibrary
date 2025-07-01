@@ -23,5 +23,20 @@ import taack.ast.annotation.TaackFieldEnum
 @GrailsCompileStatic
 @TaackFieldEnum
 class MyLibraryBook {
-    // TODO 1.2: Define fields, initialize listOfBookInstance, implement getNumberOfInstances(), and set up hasMany as described above.
+    String title
+    MyLibraryAuthor author
+    String description
+    int numberOfPages
+    List<MyLibraryBookInstance> listOfBookInstance //(1)
+    int count = 0
+
+    static constraints = {}
+
+    static hasMany = [listOfBookInstance: MyLibraryBookInstance]
+
+    int getNumberOfInstances() {
+        if (!listOfBookInstance) { return 0}
+        count = listOfBookInstance.count {it.isActive} as int
+        return count
+    }
 }

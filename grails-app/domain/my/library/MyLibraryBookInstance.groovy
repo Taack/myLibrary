@@ -20,5 +20,12 @@ import taack.ast.annotation.TaackFieldEnum
 @GrailsCompileStatic
 @TaackFieldEnum
 class MyLibraryBookInstance {
-    // TODO 1.3: Define fields, belongsTo relationship, and default initializations as described above.
+    MyLibraryBook book
+    Boolean isActive = true
+    Integer serialNumber = new Random().nextInt(100000) //(1)
+
+    static constraints = {}
+
+    static belongsTo = [book: MyLibraryBook] //(2)
+
 }
