@@ -36,7 +36,6 @@ import taack.ui.dsl.common.ActionIcon
 class MyLibraryController implements WebAttributes {
     TaackUiService taackUiService
     MyLibraryUiService myLibraryUiService
-    TaackSaveService taackSaveService
 
     /*------------------------------------------------------------*/
     /* General actions                                            */
@@ -55,110 +54,175 @@ class MyLibraryController implements WebAttributes {
     /*------------------------------------------------------------*/
 
     /**
-     * Builds and displays the *Author* table together with a filter bar. A
-     * *Create* icon is added to the table header that opens the {@link #createAuthor(MyLibraryAuthor)}
-     * modal.
+     * Displays the table of authors along with a filter bar and a *Create Author* button.
+     *
+     * **Purpose:** Renders the main author listing screen where users can:
+     * - View the list of authors.
+     * - Filter authors using the filter bar.
+     * - Access the form to create a new author via the Create button.
+     *
+     * **How it works (to implement):**
+     * - Call `myLibraryUiService.buildAuthorTable()` to build the table specifier for displaying authors.
+     * - Call `myLibraryUiService.buildAuthorFilter()` to build the filter specifier.
+     * - Use `taackUiService.show` to render a UI block containing:
+     *   - The filter and table combined using `tableFilter`.
+     *   - A *Create* menu icon that opens the `createAuthor` modal when clicked.
+     * - Add the general menu by calling `myLibraryUiService.buildMenu()`.
+     *
+     * **Inputs:** None directly; relies on UI services to build table and filter specifiers.
+     * **Outputs:** Renders the author list screen for the user.
+     *
+     * Adds a Create icon button that opens the createAuthor action.
      */
     def listAuthor() {
-        UiTableSpecifier tableAuthorSpecifier = myLibraryUiService.buildAuthorTable(false)
+        UiTableSpecifier tableAuthorSpecifier = myLibraryUiService.buildAuthorTable()
         UiFilterSpecifier filterAuthorSpecifier = myLibraryUiService.buildAuthorFilter()
 
         taackUiService.show(new UiBlockSpecifier().ui {
-            tableFilter filterAuthorSpecifier, tableAuthorSpecifier, {
-                menuIcon ActionIcon.CREATE, this.&createAuthor as MethodClosure
-            }
+            // TODO 2.3: Use tableFilter to combine filterAuthorSpecifier and tableAuthorSpecifier, and add a Create menu icon as shown in the example.
+            // Example : tableFilter filterSpecifier, tableSpecifier, {
+            //                menuIcon ActionIcon.CREATE, this.&methode as MethodClosure
+            //           }
         }, myLibraryUiService.buildMenu())
     }
 
     /**
-     * Opens a modal form (built by {@link MyLibraryUiService#buildAuthorForm(MyLibraryAuthor)})
-     * to create or edit an author.
+     * Opens a modal form for creating or editing an author.
      *
-     * @param author optional existing author – will be pre‑filled when editing
+     * **Purpose:** Displays the author form inside a modal window for user input or editing.
+     *
+     * **How it works (to implement):**
+     * - Build the form specifier by calling `myLibraryUiService.buildAuthorForm(author)`.
+     * - Use `taackUiService.show` to render a modal containing the form.
+     *
+     * **Inputs:**
+     * - `author`: The author object to edit, or null for creating a new author.
+     *
+     * **Outputs:** Displays the modal form to the user.
      */
     def createAuthor(MyLibraryAuthor author) {
-        UiFormSpecifier formAuthorSpecifier = myLibraryUiService.buildAuthorForm(author)
+        // TODO 2.5.1: Build formAuthorSpecifier by calling myLibraryUiService.buildAuthorForm(author).
 
         taackUiService.show(new UiBlockSpecifier().ui {
             modal {
-                form formAuthorSpecifier
+                // TODO 2.5.2: Add the formAuthorSpecifier to the modal using the form keyword.
             }
         })
     }
 
     /**
-     * Soft‑deletes the given author by setting {@code isActive = false}. The
-     * record remains in the database for auditing purposes.
+     * Soft-deletes the given author by marking them as inactive.
      *
-     * @param author the author to deactivate
+     * **Purpose:** Deactivates an author without removing their record from the database, allowing for future reactivation if needed.
+     *
+     * **How it works (to implement):**
+     * - Sets the `isActive` field of the provided `author` to `false`.
+     * - Redirects the user back to the author listing screen after deactivation.
+     *
+     * **Inputs:**
+     * - `author`: The author to deactivate.
+     *
+     * **Outputs:** Updates the author's active status in the database and redirects to the author list view.
      */
     @Transactional
     def deleteAuthor(MyLibraryAuthor author) {
-        author.isActive = false
-        redirect action: 'listAuthor'
+        // TODO 2.8.1: Set author.isActive to false to deactivate the author.
+        // TODO 2.8.2: Redirect to the 'listAuthor' action to refresh the author list view.
     }
 
     /**
      * Reactivates a previously deactivated author.
      *
-     * @param author the author to reactivate
+     * **Purpose:** Marks an inactive author as active again, restoring their visibility and usability in the system.
+     *
+     * **How it works (to implement):**
+     * - Sets the `isActive` field of the provided `author` to `true`.
+     * - Redirects the user back to the author listing screen after reactivation.
+     *
+     * **Inputs:**
+     * - `author`: The author to reactivate.
+     *
+     * **Outputs:** Updates the author's active status in the database and redirects to the author list view.
      */
     @Transactional
     def activateAuthor(MyLibraryAuthor author) {
-        //TODO: reactivate the author using isActive then redirect to index.
-        author.isActive = true
-        redirect action: 'listAuthor'
+        // TODO 2.9.1: Set author.isActive to true to reactivate the author.
+        // TODO 2.9.2: Redirect to the 'listAuthor' action to refresh the author list view.
     }
 
     /**
-     * Persists a new or edited author and reloads the page, or re‑renders the
-     * form with validation errors if saving fails. Delegated to
-     * {@link TaackSaveService}.
+     * Saves a new or edited author and reloads the page, or re-renders the form with validation errors if saving fails.
+     *
+     * **Purpose:** Persists author data changes in the database and ensures UI feedback.
+     *
+     * **How it works (to implement):**
+     * - Uses `taackSaveService.saveThenReloadOrRenderErrors` with `MyLibraryAuthor` as the argument to:
+     *   - Save the author object.
+     *   - Reload the page if saving succeeds.
+     *   - Re-render the form showing validation errors if saving fails.
+     *
+     * **Inputs:** None directly; uses request parameters bound to MyLibraryAuthor.
+     * **Outputs:** Persists data and updates the UI accordingly.
      */
     @Transactional
     def saveAuthor() {
-        taackSaveService.saveThenReloadOrRenderErrors(MyLibraryAuthor)
+        // TODO 2.6: Call taackSaveService.saveThenReloadOrRenderErrors with MyLibraryAuthor to handle saving and reloading logic.
     }
 
     /**
-     * Shows a read‑only detail view for the selected author, followed by the
-     * list of books written by that author.
+     * Displays a modal with the author's details and a list of their books.
      *
-     * @param author the author whose details are to be displayed
+     * **Purpose:** Allows users to view an author's information along with the books they have written, all within a single modal window.
+     *
+     * **How it works (to implement):**
+     * - Build the table specifier for books written by this author by calling `myLibraryUiService.buildBookTable(author)`.
+     * - Build the filter specifier for books by calling `myLibraryUiService.buildBookFilter()`.
+     * - Build the show specifier for the author's details by calling `myLibraryUiService.buildAuthorShow(author)`.
+     * - Use `taackUiService.show` to render a UI block containing:
+     *   - A modal that displays:
+     *     - The author's details using `show showBookSpecifier`.
+     *     - A tableFilter block combining the book filter and table specifiers.
+     *
+     * **Inputs:**
+     * - `author`: The author whose details and books are to be displayed.
+     *
+     * **Outputs:** Renders a modal showing the author's details and their list of books.
      */
     def showAuthor(MyLibraryAuthor author) {
-        UiTableSpecifier tableBookSpecifier = myLibraryUiService.buildBookTable(author)
-        UiFilterSpecifier filterBookSpecifier = myLibraryUiService.buildBookFilter()
-        UiShowSpecifier showBookSpecifier = new UiShowSpecifier()
-
-        showBookSpecifier.ui(author, {
-            fieldLabeled author.firstName_
-            fieldLabeled author.lastName_
-            fieldLabeled author.dateOfBirth_
-            fieldLabeled author.isActive_
-        })
-        //TODO: put this in the ui services for persistency purposes ??
+        // TODO 2.12.1: Build tableBookSpecifier by calling myLibraryUiService.buildBookTable(author).
+        // TODO 2.12.2: Build filterBookSpecifier by calling myLibraryUiService.buildBookFilter().
+        // TODO 2.12.3: Build showBookSpecifier by calling myLibraryUiService.buildAuthorShow(author).
 
         taackUiService.show(new UiBlockSpecifier().ui {
             modal {
-                show showBookSpecifier
-                tableFilter filterBookSpecifier, tableBookSpecifier
+                // TODO 2.12.4: Show author details using showBookSpecifier.
+                // TODO 2.12.5: Add tableFilter combining filterBookSpecifier and tableBookSpecifier.
             }
         })
     }
 
     /**
-     * Renders a modal containing a filterable/selectable author table so the
-     * caller can pick an author and have its ID returned via AJAX.
+     * Opens a modal selector listing all authors for selection.
+     *
+     * **Purpose:** Allows users to select an author from a list, typically used in forms requiring author association.
+     *
+     * **How it works (to implement):**
+     * - Build the author table specifier in selection mode by calling `myLibraryUiService.buildAuthorTable(true)`.
+     * - Build the author filter specifier by calling `myLibraryUiService.buildAuthorFilter()`.
+     * - Use `taackUiService.show` to render a modal containing:
+     *   - A tableFilter combining the filter and table specifiers.
+     *
+     * **Inputs:** None directly.
+     *
+     * **Outputs:** Displays a modal for author selection.
      */
     def selectAuthor() {
-        UiTableSpecifier tableAuthorSpecifier = myLibraryUiService.buildAuthorTable(true)
-        UiFilterSpecifier filterAuthorSpecifier = myLibraryUiService.buildAuthorFilter()
-        taackUiService.show(new UiBlockSpecifier().ui {
-            modal {
-                tableFilter filterAuthorSpecifier, tableAuthorSpecifier
-            }
-        })
+        // TODO 3.5.1: Build tableAuthorSpecifier by calling myLibraryUiService.buildAuthorTable(true).
+        // TODO 3.5.2: Build filterAuthorSpecifier by calling myLibraryUiService.buildAuthorFilter().
+        // TODO 3.5.3: Use taackUiService.show to render a UiBlockSpecifier.
+        // Inside show block:
+        // - TODO 3.5.4: Define a modal block.
+        //   - TODO 3.5.5: Add tableFilter combining filterAuthorSpecifier and tableAuthorSpecifier.
     }
 
     /*------------------------------------------------------------*/
@@ -166,165 +230,205 @@ class MyLibraryController implements WebAttributes {
     /*------------------------------------------------------------*/
 
     /**
-     * Shows all books in a table with an accompanying filter bar. Includes a
-     * *Create* icon that opens the {@link #createBook(MyLibraryBook)} modal.
+     * Displays the table of books along with a filter bar and a *Create Book* button.
+     *
+     * **Purpose:** Renders the main book listing screen where users can:
+     * - View the list of books.
+     * - Filter books using the filter bar.
+     * - Access the form to create a new book via the Create button.
+     *
+     * **How it works (to implement):**
+     * - Build the table specifier by calling `myLibraryUiService.buildBookTable()`.
+     * - Build the filter specifier by calling `myLibraryUiService.buildBookFilter()`.
+     * - Use `taackUiService.show` to render the UI block containing:
+     *   - A tableFilter combining the filter and table specifiers.
+     *   - A menu icon for creating a new book.
+     * - Include the general menu built by `myLibraryUiService.buildMenu()`.
+     *
+     * **Inputs:** None directly; uses UI services to build specifiers.
+     *
+     * **Outputs:** Renders the book list screen with filtering and creation options.
      */
     def listBook() {
-        UiTableSpecifier tableBookSpecifier = myLibraryUiService.buildBookTable()
-        UiFilterSpecifier filterBookSpecifier = myLibraryUiService.buildBookFilter()
-
-        taackUiService.show(new UiBlockSpecifier().ui {
-            tableFilter filterBookSpecifier, tableBookSpecifier, {
-                menuIcon ActionIcon.CREATE, this.&createBook as MethodClosure
-            }
-        }, myLibraryUiService.buildMenu())
+        // TODO 3.3.1: Build tableBookSpecifier by calling myLibraryUiService.buildBookTable().
+        // TODO 3.3.2: Build filterBookSpecifier by calling myLibraryUiService.buildBookFilter().
+        // TODO 3.3.3: Use taackUiService.show to render a UiBlockSpecifier.
+        // Inside show block:
+        // - TODO 3.3.4: Add tableFilter combining filterBookSpecifier and tableBookSpecifier.
+        // - TODO 3.3.5: Add menuIcon for CREATE action linked to createBook.
+        // TODO 3.3.6: Include the general menu by calling myLibraryUiService.buildMenu().
     }
 
     /**
-     * Opens a modal for creating or editing a book. The actual form is provided
-     * by {@link MyLibraryUiService#buildBookForm(MyLibraryBook)}.
+     * Opens a modal form for creating or editing a book.
      *
-     * @param book optional existing book for edit mode
+     * **Purpose:** Displays the book form inside a modal window for user input or editing.
+     *
+     * **How it works (to implement):**
+     * - Build the form specifier by calling `myLibraryUiService.buildBookForm(book)`.
+     * - Use `taackUiService.show` to render a modal containing the form.
+     *
+     * **Inputs:**
+     * - `book`: The book object to edit, or null for creating a new book.
+     *
+     * **Outputs:** Displays the modal form to the user.
      */
     def createBook(MyLibraryBook book) {
-        UiFormSpecifier tableFormSpecifier = myLibraryUiService.buildBookForm(book)
-
-        taackUiService.show new UiBlockSpecifier().ui {
-            modal {
-                form tableFormSpecifier
-            }
-        }
+        // TODO 3.6.1: Build tableFormSpecifier by calling myLibraryUiService.buildBookForm(book).
+        // TODO 3.6.2: Use taackUiService.show to render a UiBlockSpecifier.
+        // Inside show block:
+        // - TODO 3.6.3: Define a modal block.
+        //   - TODO 3.6.4: Add form using tableFormSpecifier.
     }
 
     /**
-     * Opens a modal form that lets the librarian specify how many physical
-     * copies of a given book to purchase (i.e. create). Internally delegates to
-     * {@link MyLibraryUiService#buildBookPurchase(MyLibraryBook)}.
+     * Opens a modal form to specify the number of book instances to purchase for a given book.
+     *
+     * **Purpose:** Allows librarians to input how many physical copies of a book to add to the library inventory.
+     *
+     * **How it works (to implement):**
+     * - Build the purchase form specifier by calling `myLibraryUiService.buildBookPurchase(book)`.
+     * - Use `taackUiService.show` to render a modal containing the form.
+     *
+     * **Inputs:**
+     * - `book`: The book for which instances are being purchased.
+     *
+     * **Outputs:** Displays the modal form to the user.
      */
     def purchaseBook(MyLibraryBook book) {
-        UiFormSpecifier tableAddBookInstanceSpecifier = myLibraryUiService.buildBookPurchase(book)
-
-        taackUiService.show new UiBlockSpecifier().ui {
-            modal {
-                form tableAddBookInstanceSpecifier
-            }
-        }
+        // TODO 3.10.1: Build tableAddBookInstanceSpecifier by calling myLibraryUiService.buildBookPurchase(book).
+        // TODO 3.10.2: Use taackUiService.show to render a UiBlockSpecifier.
+        // Inside show block:
+        // - TODO 3.10.3: Define a modal block.
+        //   - TODO 3.10.4: Add form using tableAddBookInstanceSpecifier.
     }
 
     /**
-     * Creates the requested number of {@link MyLibraryBookInstance}s for the
-     * specified book and reloads the surrounding UI block via AJAX.
+     * Creates the specified number of book instances for a given book and reloads the UI block via AJAX.
      *
-     * @param numberForInstances wrapper containing the desired number of copies
-     * @param book               the logical book entity to which copies belong
+     * **Purpose:** Adds multiple physical copies of a book to the library inventory in one action.
+     *
+     * **How it works (to implement):**
+     * - Loop from 0 to the number specified in `numberForInstances.numberOfInstances`.
+     * - In each iteration:
+     *   - Create a new instance of `MyLibraryBookInstance`.
+     *   - Assign the current book to the new instance.
+     *   - Add the new book instance to the book's list of instances.
+     * - Reload the UI block using `taackUiService.ajaxReload()` to reflect the changes immediately.
+     *
+     * **Inputs:**
+     * - `numberForInstances`: Contains the number of copies to create.
+     * - `book`: The logical book entity to which copies belong.
+     *
+     * **Outputs:** Adds the specified book instances and refreshes the UI.
      */
     @Transactional
     def purchaseAndSaveBook(NumberForInstances numberForInstances, MyLibraryBook book) {
-        for (int i = 0; i < (numberForInstances.numberOfInstances) as Integer; i++) {
-            MyLibraryBookInstance newBookInstance = new MyLibraryBookInstance()
-            newBookInstance.book = book
-            book.addToListOfBookInstance(newBookInstance)
-        }
-        taackUiService.ajaxReload()
-    }
-
-
-    //TODO implement or erase
-    /**
-     * Soft‑deletes a book to let the user select specific instances to delete.
-     */
-    @Transactional
-    def deleteBook(MyLibraryBook book) {
-        //create a from to select the bookInstances to delete
-        //book.isActive = false
-        redirect action: 'listBook'
+        // TODO 3.11.1: Loop from i = 0 to numberForInstances.numberOfInstances.
+        // Inside loop:
+        // - TODO 3.11.2: Create a new MyLibraryBookInstance named newBookInstance.
+        // - TODO 3.11.3: Set newBookInstance.book to book.
+        // - TODO 3.11.4: Add newBookInstance to book.listOfBookInstance.
+        // TODO 3.11.5: After loop, call taackUiService.ajaxReload() to refresh the UI.
     }
 
     /**
-     * Saves a book entity (new or edited) and either reloads the page or
-     * re‑renders the form with validation errors.
+     * Saves a new or edited book and reloads the page, or re-renders the form with validation errors if saving fails.
+     *
+     * **Purpose:** Persists book data changes in the database and ensures UI feedback.
+     *
+     * **How it works (to implement):**
+     * - Uses `taackSaveService.saveThenReloadOrRenderErrors` with `MyLibraryBook` as the argument to:
+     *   - Save the book object.
+     *   - Reload the page if saving succeeds.
+     *   - Re-render the form showing validation errors if saving fails.
+     *
+     * **Inputs:** None directly; uses request parameters bound to MyLibraryBook.
+     *
+     * **Outputs:** Persists data and updates the UI accordingly.
      */
     @Transactional
     def saveBook() {
-        taackSaveService.saveThenReloadOrRenderErrors(MyLibraryBook)
+        // TODO 3.7: Call taackSaveService.saveThenReloadOrRenderErrors with MyLibraryBook to handle saving and reloading logic.
     }
 
     /**
-     * Displays read‑only details of a single book inside a modal.
+     * Displays a modal with the book's details in read-only format.
      *
-     * @param book the book whose details are requested
+     * **Purpose:** Allows users to view the details of a book in a non-editable modal window.
+     *
+     * **How it works (to implement):**
+     * - Build the show specifier for the book by calling `myLibraryUiService.buildBookShow(book)`.
+     * - Use `taackUiService.show` to render a modal containing the show specifier.
+     *
+     * **Inputs:**
+     * - `book`: The book whose details are to be displayed.
+     *
+     * **Outputs:** Displays a modal showing the book's details.
      */
     def showBook(MyLibraryBook book) {
-        UiShowSpecifier showBookSpecifier = new UiShowSpecifier().ui(book, {
-            fieldLabeled book.title_
-            fieldLabeled book.author_
-            fieldLabeled book.numberOfPages_
-            fieldLabeled book.description_
-            fieldLabeled book.numberOfInstances_
-        })
-
-        taackUiService.show(new UiBlockSpecifier().ui {
-            modal {
-                show showBookSpecifier
-            }
-        })
+        // TODO 3.15.1: Build showBookSpecifier by calling myLibraryUiService.buildBookShow(book).
+        // TODO 3.15.2: Use taackUiService.show to render a UiBlockSpecifier.
+        // Inside show block:
+        // - TODO 3.15.3: Define a modal block.
+        //   - TODO 3.15.4: Add show using showBookSpecifier.
     }
 
     /**
-     * Opens a modal selector listing all books.
-     */
-    def selectBook() {
-        UiTableSpecifier tableBookSpecifier = myLibraryUiService.buildBookTable()
-        UiFilterSpecifier filterBookSpecifier = myLibraryUiService.buildBookFilter()
-        taackUiService.show new UiBlockSpecifier().ui {
-            modal {
-                tableFilter filterBookSpecifier, tableBookSpecifier
-            }
-        }
-    }
-
-    /**
-     * Opens a modal that shows every physical instance of a given book. The
-     * list is filterable and selectable so the librarian can pick the exact
-     * copy to lend or delete.
+     * Opens a modal that shows all physical instances of a given book.
+     *
+     * **Purpose:** Allows librarians to view and select specific book instances for actions such as lending or deletion.
+     *
+     * **How it works (to implement):**
+     * - Build the book instance table specifier by calling `myLibraryUiService.buildInstanceBookTable(book)`.
+     * - Use `taackUiService.show` to render a modal containing the table of book instances.
+     *
+     * **Inputs:**
+     * - `book`: The book whose instances are to be displayed.
+     *
+     * **Outputs:** Displays a modal listing all instances of the book.
      */
     def selectBookInstance(MyLibraryBook book) {
-        UiTableSpecifier bookInstanceTableSpecifier = myLibraryUiService.buildInstanceBookTable(book)
-
-        taackUiService.show new UiBlockSpecifier().ui {
-            modal true, {
-                table bookInstanceTableSpecifier
-            }
-        }
+        // TODO 3.12.1: Build bookInstanceTableSpecifier by calling myLibraryUiService.buildInstanceBookTable(book).
+        // TODO 3.12.2: Use taackUiService.show to render a UiBlockSpecifier.
+        // Inside show block:
+        // - TODO 3.12.3: Define a modal block (with true flag).
+        //   - TODO 3.12.4: Add table using bookInstanceTableSpecifier.
     }
 
     /**
-     * Soft‑deletes (deactivates) a single physical book instance and refreshes
-     * the surrounding tables to reflect the change.
+     * Soft-deletes (deactivates) a single physical book instance and refreshes the UI tables to reflect the change.
      *
-     * @param bookInstance the specific physical copy to deactivate
+     * **Purpose:** Allows librarians to deactivate specific book copies and update the view immediately.
+     *
+     * **How it works (to implement):**
+     * - Retrieve the parent book using `params.bookId`.
+     * - Build the table specifier for book instances by calling `myLibraryUiService.buildInstanceBookTable(book)`.
+     * - Set `bookInstance.isActive` to false to deactivate it.
+     * - Save the updated book instance with flush and without validation.
+     * - Use `taackUiService.show` to render:
+     *   - A closeModalAndUpdateBlock block containing:
+     *     - A tableFilter combining the book filter and book table.
+     *     - A modal containing the updated book instance table.
+     *
+     * **Inputs:**
+     * - `bookInstance`: The specific physical copy to deactivate.
+     *
+     * **Outputs:** Deactivates the book instance and refreshes the UI to reflect the change.
      */
     @Transactional
     def deleteBookInstances(MyLibraryBookInstance bookInstance) {
-        MyLibraryBook book = MyLibraryBook.get(params.long('bookId'))
-        UiTableSpecifier bookInstanceTable = myLibraryUiService.buildInstanceBookTable(book)
-
-        bookInstance.isActive = false
-        bookInstance.save(flush: true, validate: false)
-
-        taackUiService.show new UiBlockSpecifier().ui {
-            closeModalAndUpdateBlock {
-                tableFilter(
-                        myLibraryUiService.buildBookFilter(),
-                        myLibraryUiService.buildBookTable(),
-                ) {
-                    menuIcon ActionIcon.CREATE, this.&createBook as MethodClosure
-                }
-                modal {
-                    table bookInstanceTable
-                }
-            }
-        }
+        // TODO 3.18.1: Retrieve the book by calling MyLibraryBook.get with params.bookId.
+        // TODO 3.18.2: Build bookInstanceTable by calling myLibraryUiService.buildInstanceBookTable(book).
+        // TODO 3.18.3: Set bookInstance.isActive to false.
+        // TODO 3.18.4: Save bookInstance with flush true and validate false.
+        // TODO 3.18.5: Use taackUiService.show to render a UiBlockSpecifier.
+        // Inside show block:
+        // - TODO 3.18.6: Define closeModalAndUpdateBlock.
+        //   Inside closeModalAndUpdateBlock:
+        //   - TODO 3.18.7: Add tableFilter combining myLibraryUiService.buildBookFilter() and buildBookTable().
+        //   - TODO 3.18.8: Add menuIcon for CREATE action linked to createBook.
+        //   - TODO 3.18.9: Add modal block containing table bookInstanceTable.
     }
 
 }
