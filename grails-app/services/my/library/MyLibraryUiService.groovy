@@ -88,6 +88,10 @@ class MyLibraryUiService implements WebAttributes {
         m.ui {
             menu MyLibraryController.&listBook as MC
             menu MyLibraryController.&index as MC
+
+            //ADDED
+            menu MyLibraryController.&listBooksBorrowed as MC
+            menu MyLibraryController.&listBooksCurrentlyBorrowed as MC
         }
     }
 
@@ -332,14 +336,25 @@ class MyLibraryUiService implements WebAttributes {
                     label "Number of instances "//book.numberOfInstances
                 }
                 if (!author) {
+                    //ADDED LINE
+                    label "Number of Available Book Instances"
+
                     column {
-                        label "Modify number of Book Instances" //only for ADMIN
+                        label "Modify number of Book Instances"
+                    }
+                    //ADDED column
+                    column {
+                        label "Request Form"
                     }
                 }
             }
             TaackFilter.FilterBuilder filter =  taackFilterService.getBuilder(MyLibraryBook)
                     .setMaxNumberOfLine(10)
                     .setSortOrder(TaackFilter.Order.ASC, book.title_)
+
+            //ADDED LINE
+            filter.addFilter(buildIsAvailableBookFilter(book))
+
             if(author) {
                 filter.addRestrictedIds(author.listOfBooks*.id as Long[])
             }
@@ -355,9 +370,17 @@ class MyLibraryUiService implements WebAttributes {
                     rowField bookIterator.numberOfInstances_
                 }
                 if (!author) {
+                    //ADDED LINE
+                    rowField bookIterator.numberOfBooksBorrowable_
+
                     rowColumn {
                         rowAction ActionIcon.DELETE * IconStyle.SCALE_DOWN, MyLibraryController.&selectBookInstance as MC, bookIterator.id
                         rowAction ActionIcon.ADD * IconStyle.SCALE_DOWN, MyLibraryController.&purchaseBook as MC, bookIterator.id
+                    }
+
+                    //ADDED rowColumn
+                    rowColumn {
+                        rowAction ActionIcon.CREATE * IconStyle.SCALE_DOWN, MyLibraryController.&requestBookInstance as MC, bookIterator.id
                     }
                 }
             }
@@ -536,25 +559,89 @@ class MyLibraryUiService implements WebAttributes {
      *
      * **Outputs:** Returns a `UiTableSpecifier` configured to display and manage book instances.
      */
-    UiTableSpecifier buildInstanceBookTable(MyLibraryBook book, MyLibraryBookInstance bookInstance = null) {
+    UiTableSpecifier buildInstanceBookTable(MyLibraryBook book, isOne = false, MyLibraryBookInstance bookInstance = null) {
         UiTableSpecifier table = new UiTableSpecifier()
         table.ui {
             header {
                 label "Serial Number"
-                column {label "Delete"}
+
+                //ADDED the isOne variable and everything except the column and delete
+                column {
+                    if (isOne) {
+                        label "Select Book Instance"
+                    } else {
+                        label "Delete"
+                    }
+                }
+
+
             }
 
             TaackFilter.FilterBuilder filter = taackFilterService.getBuilder(MyLibraryBookInstance).addRestrictedIds(book.listOfBookInstance*.id as Long[])
             filter.addFilter(buildIsActiveBookInstances(book))
 
+            //ADDED LINE
+            filter.addFilter(buildIsAvailableBookInstances(book))
+
             iterate(
                     filter.build()) { MyLibraryBookInstance bookInstanceIterator ->
                 rowField bookInstanceIterator.serialNumber_
+
                 rowColumn {
-                    rowAction ActionIcon.DELETE * IconStyle.SCALE_DOWN, MyLibraryController.&deleteBookInstances as MC, bookInstanceIterator.id, [bookId:book.id]
+                    // ADDED everything except the the deleteAction
+                    if(isOne) {
+                        rowAction tr('default.serialNumber.label'), ActionIcon.SELECT * IconStyle.SCALE_DOWN, bookInstanceIterator.id, bookInstanceIterator.serialNumber.toString()
+                    } else {
+                        rowAction ActionIcon.DELETE * IconStyle.SCALE_DOWN, MyLibraryController.&deleteBookInstances as MC, bookInstanceIterator.id, [bookId:book.id]
+                    }
                 }
             }
         }
     }
+
+    //ADDED
+    UiFilterSpecifier buildIsAvailableBookFilter(MyLibraryBook book) {
+        UiFilterSpecifier isAvailableBookFilter = new UiFilterSpecifier()
+        MyLibraryBookInstance bookInstance = new MyLibraryBookInstance()
+        isAvailableBookFilter.ui MyLibraryBook, {
+            section "Filter", {
+                filterFieldExpressionBool "Is Available", new FilterExpression(true, Operator.EQ, book.listOfBookInstance_,bookInstance.isAvailableB_)
+            }
+        }
+    }
+
+    //ADDED BLOCK
+    UiFilterSpecifier buildIsAvailableBookInstances(MyLibraryBook book) {
+        MyLibraryBookInstance bookInstance = new MyLibraryBookInstance()
+        UiFilterSpecifier bookInstanceFilterSpecifier = new UiFilterSpecifier()
+        bookInstanceFilterSpecifier.sec MyLibraryBookInstance, {
+            filterFieldExpressionBool new FilterExpression(true, Operator.EQ, bookInstance.isAvailableB_)    //new FilterExpression(true, Operator.EQ, bookInstance.isAvailable_)
+        }
+    }
+
+    //ADDED BLOCK
+    UiFormSpecifier buildRequestBookForm(MyLibraryBook book) {
+        User user = springSecurityService.currentUser as User
+        MyLibraryBorrowed borrowed = new MyLibraryBorrowed()
+        borrowed.user = user
+        book ?= new MyLibraryBook(params)
+        UiFormSpecifier requestBookFormSpecifier = new UiFormSpecifier()
+
+        requestBookFormSpecifier.ui borrowed, {
+            section "Request Book Form", {
+                hiddenField borrowed.user_ //pass paramretes in the form witout the user seeing
+                field borrowed.requestDate_
+                ajaxField borrowed.bookInstance_, MyLibraryController.&selectBookInstanceOne as MC, book.id
+
+            }
+            formAction MyLibraryController.&requestBookForm as MC
+        }
+    }
+
+
+
+
 }
+
+
 
