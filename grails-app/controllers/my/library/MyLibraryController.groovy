@@ -36,6 +36,7 @@ import taack.ui.dsl.common.ActionIcon
 class MyLibraryController implements WebAttributes {
     TaackUiService taackUiService
     MyLibraryUiService myLibraryUiService
+    TaackSaveService taackSaveService
 
     /*------------------------------------------------------------*/
     /* General actions                                            */
@@ -79,10 +80,9 @@ class MyLibraryController implements WebAttributes {
         UiFilterSpecifier filterAuthorSpecifier = myLibraryUiService.buildAuthorFilter()
 
         taackUiService.show(new UiBlockSpecifier().ui {
-            // TODO 2.3: Use tableFilter to combine filterAuthorSpecifier and tableAuthorSpecifier, and add a Create menu icon as shown in the example.
-            // Example : tableFilter filterSpecifier, tableSpecifier, {
-            //                menuIcon ActionIcon.CREATE, this.&methode as MethodClosure
-            //           }
+            tableFilter filterAuthorSpecifier, tableAuthorSpecifier, {
+                menuIcon ActionIcon.CREATE, this.&createAuthor as MethodClosure
+            }
         }, myLibraryUiService.buildMenu())
     }
 
@@ -101,11 +101,11 @@ class MyLibraryController implements WebAttributes {
      * **Outputs:** Displays the modal form to the user.
      */
     def createAuthor(MyLibraryAuthor author) {
-        // TODO 2.5.1: Build formAuthorSpecifier by calling myLibraryUiService.buildAuthorForm(author).
+        UiFormSpecifier formAuthorSpecifier = myLibraryUiService.buildAuthorForm(author)
 
         taackUiService.show(new UiBlockSpecifier().ui {
             modal {
-                // TODO 2.5.2: Add the formAuthorSpecifier to the modal using the form keyword.
+                form formAuthorSpecifier
             }
         })
     }
@@ -126,8 +126,8 @@ class MyLibraryController implements WebAttributes {
      */
     @Transactional
     def deleteAuthor(MyLibraryAuthor author) {
-        // TODO 2.8.1: Set author.isActive to false to deactivate the author.
-        // TODO 2.8.2: Redirect to the 'listAuthor' action to refresh the author list view.
+        author.isActive = false
+        redirect action: 'listAuthor'
     }
 
     /**
@@ -146,8 +146,8 @@ class MyLibraryController implements WebAttributes {
      */
     @Transactional
     def activateAuthor(MyLibraryAuthor author) {
-        // TODO 2.9.1: Set author.isActive to true to reactivate the author.
-        // TODO 2.9.2: Redirect to the 'listAuthor' action to refresh the author list view.
+        author.isActive = true
+        redirect action: 'listAuthor'
     }
 
     /**
@@ -166,7 +166,7 @@ class MyLibraryController implements WebAttributes {
      */
     @Transactional
     def saveAuthor() {
-        // TODO 2.6: Call taackSaveService.saveThenReloadOrRenderErrors with MyLibraryAuthor to handle saving and reloading logic.
+        taackSaveService.saveThenReloadOrRenderErrors(MyLibraryAuthor)
     }
 
     /**
@@ -189,14 +189,14 @@ class MyLibraryController implements WebAttributes {
      * **Outputs:** Renders a modal showing the author's details and their list of books.
      */
     def showAuthor(MyLibraryAuthor author) {
-        // TODO 2.12.1: Build tableBookSpecifier by calling myLibraryUiService.buildBookTable(author).
-        // TODO 2.12.2: Build filterBookSpecifier by calling myLibraryUiService.buildBookFilter().
-        // TODO 2.12.3: Build showBookSpecifier by calling myLibraryUiService.buildAuthorShow(author).
+        UiTableSpecifier tableBookSpecifier = myLibraryUiService.buildBookTable(author)
+        UiFilterSpecifier filterBookSpecifier = myLibraryUiService.buildBookFilter()
+        UiShowSpecifier showAuthorSpecifier = myLibraryUiService.buildAuthorShow(author)
 
         taackUiService.show(new UiBlockSpecifier().ui {
             modal {
-                // TODO 2.12.4: Show author details using showBookSpecifier.
-                // TODO 2.12.5: Add tableFilter combining filterBookSpecifier and tableBookSpecifier.
+                show showAuthorSpecifier
+                tableFilter filterBookSpecifier, tableBookSpecifier
             }
         })
     }
