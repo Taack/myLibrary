@@ -54,6 +54,7 @@ import taack.ui.dsl.filter.expression.Operator
 @Secured(['ROLE_ADMIN'])
 class MyLibraryUiService implements WebAttributes {
     TaackFilterService taackFilterService
+    SpringSecurityService springSecurityService
 
     static lazyInit = false
     /**
@@ -75,13 +76,19 @@ class MyLibraryUiService implements WebAttributes {
     /*------------------------------------------------------------*/
 
     /**
-     * Builds and returns the main navigation menu for the library app.
+     * Builds the main menu for the library UI.
      *
-     * Adds two menu items:
-     * - One linking to MyLibraryController.listBook (books list view)
-     * - One linking to MyLibraryController.index (home page)
+     * **Purpose:** Provides navigation options for the library system, including:
+     * - Viewing the list of books.
+     * - Accessing the home/index page.
+     * - Viewing the list of borrowed books.
+     * - Viewing the list of currently borrowed books.
      *
-     * **Purpose:** Allows users to navigate between main screens of the application.
+     * **How it works:**
+     * - Creates a new `UiMenuSpecifier`.
+     * - Defines a UI block adding menu items linked to corresponding controller actions.
+     *
+     * **Outputs:** Returns a `UiMenuSpecifier` defining the full menu structure for the library UI.
      */
     UiMenuSpecifier buildMenu() {
         UiMenuSpecifier m = new UiMenuSpecifier()
@@ -89,11 +96,11 @@ class MyLibraryUiService implements WebAttributes {
             menu MyLibraryController.&listBook as MC
             menu MyLibraryController.&index as MC
 
-            //ADDED
-            menu MyLibraryController.&listBooksBorrowed as MC
-            menu MyLibraryController.&listBooksCurrentlyBorrowed as MC
+            // TODO 2: Add menu item linking to MyLibraryController.listBooksBorrowed.
+            // TODO 2: Add menu item linking to MyLibraryController.listBooksCurrentlyBorrowed.
         }
     }
+
 
     /*------------------------------------------------------------*/
     /* Author Menu                                                */
@@ -308,17 +315,33 @@ class MyLibraryUiService implements WebAttributes {
 
     /**
      * Builds the table displaying books with their title, author (if no specific author is provided),
-     * number of instances, and action buttons for viewing, editing, and managing book instances.
+     * number of instances, and action buttons for viewing, editing, modifying instances, and requesting books.
      *
-     * **Purpose:** Generates the book listing table for either all books or books by a specific author.
+     * **Purpose:** Generates the book listing table for either all books or books by a specific author, with actions to manage or request books.
      *
      * **How it works (to implement):**
-     * - Create a new instance of `MyLibraryBook`.
-     * - Create a new `UiTableSpecifier` for displaying book data.
-     * - Define the table UI with:
-     *   - A header containing title, author (conditional), number of instances, and modify instances columns.
-     * - Build a filter using `taackFilterService.getBuilder`, configure sorting and optional author restriction.
-     * - Iterate through results to display each book with actions for SHOW, EDIT, DELETE, and ADD.
+     * - Creates a new instance of `MyLibraryBook`.
+     * - Creates a new `UiTableSpecifier` for displaying book data.
+     * - Defines the table UI with:
+     *   - A header containing:
+     *     - Title column.
+     *     - Author column (if no specific author is provided).
+     *     - Number of instances column.
+     *     - **New features (TODO 3.10):**
+     *       - "Number of Available Book Instances" label.
+     *       - "Request Form" column.
+     *   - Builds a filter for `MyLibraryBook`:
+     *     - Sets max number of lines to 10.
+     *     - Sorts by title ascending.
+     *     - Restricts to the author's books if an author is provided.
+     * - Iterates through the filtered results to display:
+     *   - SHOW and EDIT actions with title field.
+     *   - Author field (if no specific author).
+     *   - Number of instances.
+     *   - **New features (TODO 3.10):**
+     *     - Number of available books field.
+     *     - "Request Book" action.
+     *   - DELETE and ADD actions for managing book instances.
      *
      * **Inputs:**
      * - `author`: Optional. If provided, displays only books by this author.
@@ -332,32 +355,18 @@ class MyLibraryUiService implements WebAttributes {
             header {
                 column {label book.title_}
                 if (!author) {sortableFieldHeader book.author_}
-                column {
-                    label "Number of instances "//book.numberOfInstances
-                }
+                column {label "Number of instances "}
                 if (!author) {
-                    //ADDED LINE
-                    label "Number of Available Book Instances"
-
-                    column {
-                        label "Modify number of Book Instances"
-                    }
-                    //ADDED column
-                    column {
-                        label "Request Form"
-                    }
+                    // TODO 3.10.1: Add label "Number of Available Book Instances".
+                    column {label "Modify number of Book Instances"}
+                    // TODO 3.10.2: Add column with label "Request Form".
                 }
             }
             TaackFilter.FilterBuilder filter =  taackFilterService.getBuilder(MyLibraryBook)
                     .setMaxNumberOfLine(10)
                     .setSortOrder(TaackFilter.Order.ASC, book.title_)
 
-            //ADDED LINE
-            filter.addFilter(buildIsAvailableBookFilter(book))
-
-            if(author) {
-                filter.addRestrictedIds(author.listOfBooks*.id as Long[])
-            }
+            if(author) {filter.addRestrictedIds(author.listOfBooks*.id as Long[])}
             iterate(
                     filter.build()) { MyLibraryBook bookIterator ->
                 rowColumn {
@@ -366,22 +375,14 @@ class MyLibraryUiService implements WebAttributes {
                     rowField bookIterator.title_
                 }
                 if (!author) {rowField bookIterator.author_}
-                rowColumn {
-                    rowField bookIterator.numberOfInstances_
-                }
+                rowColumn {rowField bookIterator.numberOfInstances_}
                 if (!author) {
-                    //ADDED LINE
-                    rowField bookIterator.numberOfBooksBorrowable_
-
+                    // TODO 3.10.3: Add rowField to display numberOfBooksBorrowable_ for available books.
                     rowColumn {
                         rowAction ActionIcon.DELETE * IconStyle.SCALE_DOWN, MyLibraryController.&selectBookInstance as MC, bookIterator.id
                         rowAction ActionIcon.ADD * IconStyle.SCALE_DOWN, MyLibraryController.&purchaseBook as MC, bookIterator.id
                     }
-
-                    //ADDED rowColumn
-                    rowColumn {
-                        rowAction ActionIcon.CREATE * IconStyle.SCALE_DOWN, MyLibraryController.&requestBookInstance as MC, bookIterator.id
-                    }
+                    // TODO 3.10.4: Add rowColumn with CREATE action linked to requestBookInstance.
                 }
             }
         }
@@ -415,7 +416,7 @@ class MyLibraryUiService implements WebAttributes {
         bookFormSpecifier.ui book, {
             section "Book details", {
                 field book.title_
-                ajaxField book.author_, MyLibraryController.&selectAuthor as MC //(1)
+                ajaxField book.author_, MyLibraryController.&selectAuthor as MC
                 field book.numberOfPages_
                 field book.description_
             }
@@ -475,7 +476,7 @@ class MyLibraryUiService implements WebAttributes {
         UiFormSpecifier bookPurchaseSpecifier = new UiFormSpecifier()
         bookPurchaseSpecifier.ui book, {
             section "Purchase Number", {
-                field numberForInstances.numberOfInstances_ //<1>
+                field numberForInstances.numberOfInstances_
             }
             formAction MyLibraryController.&purchaseAndSaveBook as MC
         }
@@ -535,109 +536,345 @@ class MyLibraryUiService implements WebAttributes {
             filterFieldExpressionBool new FilterExpression(true, Operator.EQ, bookInstance.isActive_)
         }
     }
+
     /**
-     * Builds a table displaying all active physical instances of a given book.
+     * Builds a table displaying all active (and optionally selectable) physical instances of a given book.
      *
-     * **Purpose:** Allows librarians to view and manage individual book instances, such as deleting specific copies.
+     * **Purpose:** Allows librarians or users to view, select, or delete individual book instances.
+     * If `isOne` is true, displays a selection action to choose a specific book instance; otherwise, displays a delete action to remove instances.
      *
      * **How it works (to implement):**
-     * - Create a new `UiTableSpecifier`.
-     * - Define a UI block with:
-     *   - A header containing:
-     *     - A label for "Serial Number".
-     *     - A column with a "Delete" label.
-     * - Build a filter for `MyLibraryBookInstance`:
-     *   - Restrict IDs to instances belonging to the given book.
-     *   - Add a filter to select only active book instances.
-     * - Iterate through filtered results:
-     *   - Display the serial number field.
-     *   - Add a DELETE action icon linked to `MyLibraryController.deleteBookInstances`, passing the instance ID and the book ID.
+     * - Creates a new `UiTableSpecifier`.
+     * - Defines the table header with:
+     *   - A label for "Serial Number".
+     *   - A column with a label that changes based on `isOne`:
+     *     - If `isOne` is true, displays "Select Book Instance".
+     *     - Otherwise, displays "Delete".
+     * - Builds a filter for `MyLibraryBookInstance`:
+     *   - Restricts IDs to instances belonging to the provided book.
+     *   - Adds a filter for active instances.
+     *   - **New feature:** Adds a filter for available instances by calling `buildIsAvailableBookInstances(book)`.
+     * - Iterates over the filtered results to display:
+     *   - The serial number field.
+     *   - If `isOne` is true, shows a SELECT action returning the instance's serial number.
+     *   - Otherwise, shows a DELETE action to remove the instance.
      *
      * **Inputs:**
      * - `book`: The book whose instances are to be displayed.
+     * - `isOne`: Boolean flag indicating if the table is used for selecting a single instance (true) or managing all instances (false).
      * - `bookInstance`: Optional specific instance context (default null).
      *
-     * **Outputs:** Returns a `UiTableSpecifier` configured to display and manage book instances.
+     * **Outputs:** Returns a `UiTableSpecifier` configured to display and manage or select book instances.
      */
     UiTableSpecifier buildInstanceBookTable(MyLibraryBook book, isOne = false, MyLibraryBookInstance bookInstance = null) {
         UiTableSpecifier table = new UiTableSpecifier()
         table.ui {
             header {
                 label "Serial Number"
-
-                //ADDED the isOne variable and everything except the column and delete
                 column {
-                    if (isOne) {
-                        label "Select Book Instance"
-                    } else {
-                        label "Delete"
-                    }
+                    // TODO 3.7.1: If isOne is true, add label "Select Book Instance"; else, add label "Delete".
+                    label "Delete"
                 }
-
-
             }
 
             TaackFilter.FilterBuilder filter = taackFilterService.getBuilder(MyLibraryBookInstance).addRestrictedIds(book.listOfBookInstance*.id as Long[])
             filter.addFilter(buildIsActiveBookInstances(book))
-
-            //ADDED LINE
-            filter.addFilter(buildIsAvailableBookInstances(book))
-
+            // TODO 3.7.2: Add filter for available book instances by calling buildIsAvailableBookInstances(book).
             iterate(
                     filter.build()) { MyLibraryBookInstance bookInstanceIterator ->
                 rowField bookInstanceIterator.serialNumber_
-
                 rowColumn {
-                    // ADDED everything except the the deleteAction
-                    if(isOne) {
-                        rowAction tr('default.serialNumber.label'), ActionIcon.SELECT * IconStyle.SCALE_DOWN, bookInstanceIterator.id, bookInstanceIterator.serialNumber.toString()
-                    } else {
-                        rowAction ActionIcon.DELETE * IconStyle.SCALE_DOWN, MyLibraryController.&deleteBookInstances as MC, bookInstanceIterator.id, [bookId:book.id]
-                    }
+                    // TODO 3.7.3: If isOne is true, add SELECT action returning bookInstanceIterator.serialNumber; else, add DELETE action for deleting the instance.
+                    rowAction ActionIcon.DELETE * IconStyle.SCALE_DOWN, MyLibraryController.&deleteBookInstances as MC, bookInstanceIterator.id, [bookId:book.id]
                 }
             }
         }
     }
 
-    //ADDED
-    UiFilterSpecifier buildIsAvailableBookFilter(MyLibraryBook book) {
-        UiFilterSpecifier isAvailableBookFilter = new UiFilterSpecifier()
-        MyLibraryBookInstance bookInstance = new MyLibraryBookInstance()
-        isAvailableBookFilter.ui MyLibraryBook, {
-            section "Filter", {
-                filterFieldExpressionBool "Is Available", new FilterExpression(true, Operator.EQ, book.listOfBookInstance_,bookInstance.isAvailableB_)
-            }
-        }
-    }
 
-    //ADDED BLOCK
+
+    /**
+     * Builds a filter specifier to select only available book instances for a given book.
+     *
+     * **Purpose:** Allows filtering of book instances based on their availability status, ensuring that only available copies are listed for selection or borrowing.
+     *
+     * **How it works (to implement):**
+     * - Create a new instance of `MyLibraryBookInstance`.
+     * - Create a new `UiFilterSpecifier` for `MyLibraryBookInstance`.
+     * - Define a UI block with:
+     *   - A boolean filter field expression that checks if `isAvailableB_` is true, using `FilterExpression` and `Operator.EQ`.
+     *
+     * **Inputs:**
+     * - `book`: The book whose instances are to be filtered.
+     *
+     * **Outputs:** Returns a `UiFilterSpecifier` to filter available book instances.
+     */
     UiFilterSpecifier buildIsAvailableBookInstances(MyLibraryBook book) {
-        MyLibraryBookInstance bookInstance = new MyLibraryBookInstance()
-        UiFilterSpecifier bookInstanceFilterSpecifier = new UiFilterSpecifier()
-        bookInstanceFilterSpecifier.sec MyLibraryBookInstance, {
-            filterFieldExpressionBool new FilterExpression(true, Operator.EQ, bookInstance.isAvailableB_)    //new FilterExpression(true, Operator.EQ, bookInstance.isAvailable_)
-        }
+        // TODO 3.8.1: Create a new instance of MyLibraryBookInstance named bookInstance.
+        // TODO 3.8.2: Create a new UiFilterSpecifier named bookInstanceFilterSpecifier.
+        // TODO 3.8.3: Define bookInstanceFilterSpecifier.sec block for MyLibraryBookInstance.
+        // Inside sec block:
+        // - TODO 3.8.4: Add filterFieldExpressionBool with FilterExpression comparing bookInstance.isAvailableB_ to true using Operator.EQ.
+
+        //delete this line when method implemented
+        return new UiFilterSpecifier()
     }
 
-    //ADDED BLOCK
+    /**
+     * Builds a form for requesting to borrow a book.
+     *
+     * **Purpose:** Allows users to submit a borrow request for a specific book by selecting an available instance and specifying the request date.
+     *
+     * **How it works (to implement):**
+     * - Retrieve the current user from `springSecurityService.currentUser` and cast to `User`.
+     * - Create a new instance of `MyLibraryBorrowed` and assign the user to its `user` field.
+     * - If `book` is null, initialize it using `new MyLibraryBook(params)`.
+     * - Create a new `UiFormSpecifier` for the request form.
+     * - Define a UI block for the form:
+     *   - Add a section titled "Request Book Form".
+     *   - Inside the section, add:
+     *     - A hidden field for `borrowed.user_` to pass the user in the form without display.
+     *     - A field for `borrowed.requestDate_`.
+     *     - An ajaxField for `borrowed.bookInstance_`, using `MyLibraryController.selectBookInstanceOne` as the controller action and passing the book ID.
+     *   - Define the form action linked to `MyLibraryController.saveBookForm`.
+     *
+     * **Inputs:**
+     * - `book`: The book being requested.
+     *
+     * **Outputs:** Returns a `UiFormSpecifier` representing the book request form.
+     */
     UiFormSpecifier buildRequestBookForm(MyLibraryBook book) {
-        User user = springSecurityService.currentUser as User
-        MyLibraryBorrowed borrowed = new MyLibraryBorrowed()
-        borrowed.user = user
-        book ?= new MyLibraryBook(params)
-        UiFormSpecifier requestBookFormSpecifier = new UiFormSpecifier()
+        // TODO 3.4.1: Retrieve current user from springSecurityService.currentUser and cast to User.
+        // TODO 3.4.2: Create a new instance of MyLibraryBorrowed named borrowed.
+        // TODO 3.4.3: Set borrowed.user to user.
+        // TODO 3.4.4: If book is null, initialize it with new MyLibraryBook(params).
+        // TODO 3.4.5: Create a new UiFormSpecifier named requestBookFormSpecifier.
+        // TODO 3.4.6: Define requestBookFormSpecifier.ui block for borrowed.
+        // Inside ui block:
+        // - TODO 3.4.7: Define a section titled "Request Book Form".
+        //   - TODO 3.4.8: Add hiddenField for borrowed.user_.
+        //   - TODO 3.4.9: Add field for borrowed.requestDate_.
+        //   - TODO 3.4.10: Add ajaxField for borrowed.bookInstance_ linked to MyLibraryController.selectBookInstanceOne, passing book.id.
+        // - TODO 3.4.11: Define formAction linking to MyLibraryController.saveBookForm as MC.
 
-        requestBookFormSpecifier.ui borrowed, {
-            section "Request Book Form", {
-                hiddenField borrowed.user_ //pass paramretes in the form witout the user seeing
-                field borrowed.requestDate_
-                ajaxField borrowed.bookInstance_, MyLibraryController.&selectBookInstanceOne as MC, book.id
-
-            }
-            formAction MyLibraryController.&requestBookForm as MC
-        }
+        //delete this line when method implemented
+        return new UiFormSpecifier()
     }
 
+
+    /*------------------------------------------------------------*/
+    /* History & Borrowing Menu                                   */
+    /*------------------------------------------------------------*/
+
+    /**
+     * Builds a table displaying user borrow records, including book details, request and approval dates,
+     * status, and actions to approve or return books depending on their current status.
+     *
+     * **Purpose:** Allows librarians or users to view their borrowed books, approve requests, or return books.
+     *
+     * **How it works (to implement):**
+     * - Create instances of:
+     *   - `MyLibraryBook` to reference book fields.
+     *   - `MyLibraryBorrowed` to access borrow record fields.
+     *   - `MyLibraryBookInstance` to link borrow records to physical copies.
+     * - Create a new `UiTableSpecifier` for displaying borrow data.
+     * - Define a UI block with:
+     *   - A header containing:
+     *     - Sortable columns for book title and author.
+     *     - Status of approval (if currently borrowed).
+     *     - Request and approval dates.
+     *     - "Return Book" column if currently borrowed.
+     *     - User column.
+     *     - "Approve Book" column if currently borrowed.
+     * - Build a filter using `taackFilterService.getBuilder` for `MyLibraryBorrowed`:
+     *   - Set max number of lines to 10.
+     *   - Sort by book title.
+     *   - If `isCurrently` is true, filter to borrow records with no return date (currently borrowed).
+     *   - Otherwise, filter to borrow records with a return date (past borrowings).
+     * - Iterate through filtered results to display:
+     *   - SHOW action for each borrow record with book title.
+     *   - Book author.
+     *   - Status of approval (if currently borrowed).
+     *   - Request and approval dates.
+     *   - DELETE action for returning the book if currently borrowed and approved.
+     *   - User username.
+     *   - DELETE action for approving the book if currently borrowed.
+     *
+     * **Inputs:**
+     * - `isCurrently`: Boolean flag to indicate if the table displays current borrowings (true) or past borrowings (false).
+     *
+     * **Outputs:** Returns a `UiTableSpecifier` rendering the borrow records table with appropriate columns and actions.
+     */
+    UiTableSpecifier buildUserBorrowsTable(isCurrently = false) {
+        // TODO 3.1.1: Create a new instance of MyLibraryBook named book.
+        // TODO 3.1.2: Create a new instance of MyLibraryBorrowed named borrowed.
+        // TODO 3.1.3: Create a new UiTableSpecifier named buildUserBorrowsSpecifier.
+        // TODO 3.1.4: Create a new instance of MyLibraryBookInstance named bookInstance.
+        // TODO 3.1.5: Define buildUserBorrowsSpecifier.ui block.
+        // Inside ui block:
+        // - TODO 3.1.6: Define header block with:
+        //   - TODO 3.1.7: Add sortableFieldHeader for book title.
+        //   - TODO 3.1.8: Add sortableFieldHeader for book author.
+        //   - TODO 3.1.9: If isCurrently is true, add label for borrowed.statusOfApproval_.
+        //   - TODO 3.1.10: Add labels for borrowed.requestDate_ and borrowed.approvalDate_.
+        //   - TODO 3.11.1: Add "Return Book" column if isCurrently is true.
+        //   - TODO 3.1.11: Add column with label for borrowed.user_.
+        //   - TODO 3.11.2: Add "Approve Book" column if isCurrently is true.
+        // - TODO 3.1.12: Build a filter for MyLibraryBorrowed using taackFilterService.getBuilder.
+        //   - Set max number of lines to 10.
+        //   - Set sort order by book title.
+        //   - If isCurrently is true, add filter for borrowed.returnDate_ == null.
+        //   - Otherwise, add filter for borrowed.returnDate_ != null.
+        // - TODO 3.1.13: Iterate over filter.build().
+        // Inside iterate block:
+        //   - TODO 3.18: Add SHOW action with book title.
+        //   - TODO 3.1.14: Display book author.
+        //   - TODO 3.1.15: If isCurrently is true, display borrowed.statusOfApproval_.
+        //   - TODO 3.1.16: Display borrowed.requestDate_ and borrowed.approvalDate_.
+        //   - TODO 3.11.3: Add DELETE action for returning the book if isCurrently and statusOfApproval is APPROVED.
+        //   - TODO 3.1.17: Display borrowed.user.username_.
+        //   - TODO 3.11.4: Add DELETE action for approving the book if isCurrently is true.
+
+        //delete this line when method implemented
+        return new UiTableSpecifier()
+    }
+
+    /**
+     * Builds a filter specifier for filtering user borrow records by book title.
+     *
+     * **Purpose:** Allows users or librarians to filter borrow records based on the title of the borrowed book.
+     *
+     * **How it works (to implement):**
+     * - Create instances of:
+     *   - `MyLibraryBook` to reference book fields.
+     *   - `MyLibraryBorrowed` to access borrow record fields.
+     *   - `MyLibraryBookInstance` to link borrow records to physical copies.
+     * - Create a new `UiFilterSpecifier` for `MyLibraryBorrowed`.
+     * - Define a UI block with:
+     *   - A section titled "Borrows Filter".
+     *   - Inside the section, add a filter field for the book title.
+     *
+     * **Inputs:** None directly; uses model instances to reference fields.
+     *
+     * **Outputs:** Returns a `UiFilterSpecifier` configured to filter borrow records by book title.
+     */
+    UiFilterSpecifier buildUserBorrowsFilter() {
+        // TODO 3.2.1: Create a new instance of MyLibraryBook named book.
+        // TODO 3.2.2: Create a new UiFilterSpecifier named UserBorrowsFilterSpecifier.
+        // TODO 3.2.3: Create a new instance of MyLibraryBorrowed named borrowed.
+        // TODO 3.2.4: Create a new instance of MyLibraryBookInstance named bookInstance.
+        // TODO 3.2.5: Define UserBorrowsFilterSpecifier.ui block for MyLibraryBorrowed.
+        // Inside ui block:
+        // - TODO 3.2.6: Define a section titled "Borrows Filter".
+        //   - TODO 3.2.7: Add filterField for borrowed.bookInstance_, bookInstance.book_, and book.title_.
+
+        //delete this line when method implemented
+        return new UiFilterSpecifier()
+    }
+
+
+    /**
+     * Builds a form for approving a book borrow request.
+     *
+     * **Purpose:** Allows librarians to approve a borrow request by setting its approval date and status.
+     *
+     * **How it works (to implement):**
+     * - Creates a new `UiFormSpecifier` for the approval form.
+     * - Defines a UI block for the form:
+     *   - Adds a section titled "Approve Book Form".
+     *   - Inside the section, adds fields for:
+     *     - `approvalDate_` to set the date of approval.
+     *     - `statusOfApproval_` to set the approval status.
+     *   - Defines formAction linking to `MyLibraryController.saveApprovalBookForm` to handle form submission and saving.
+     *
+     * **Inputs:**
+     * - `borrowed`: The borrow record being approved.
+     *
+     * **Outputs:** Returns a `UiFormSpecifier` representing the approval form for the borrow request.
+     */
+    UiFormSpecifier buildApproveBookTable(MyLibraryBorrowed borrowed) {
+        // TODO 3.12.1: Create a new UiFormSpecifier named approveBookSpecifier.
+        // TODO 3.12.2: Define approveBookSpecifier.ui block for borrowed.
+        // Inside ui block:
+        // - TODO 3.12.3: Define a section titled "Approve Book Form".
+        //   - TODO 3.12.4: Add field for borrowed.approvalDate_.
+        //   - TODO 3.12.5: Add field for borrowed.statusOfApproval_.
+        // - TODO 3.12.6: Define formAction linking to MyLibraryController.saveApprovalBookForm as MC.
+
+        //delete this line when method implemented
+        return new UiFormSpecifier()
+    }
+
+
+
+
+    /**
+     * Builds a form for recording the return of a borrowed book.
+     *
+     * **Purpose:** Allows librarians or users to input the return date when a borrowed book is returned.
+     *
+     * **How it works (to implement):**
+     * - Creates a new `UiFormSpecifier` for the return book form.
+     * - Defines a UI block for the form:
+     *   - Adds a section titled "Request Return Book Form".
+     *   - Inside the section, adds a field for:
+     *     - `returnDate_` to specify the date the book was returned.
+     *   - Defines formAction linking to `MyLibraryController.saveReturnBookForm` to handle the submission and saving of the return date.
+     *
+     * **Inputs:**
+     * - `borrowed`: The borrow record for which the return is being recorded.
+     *
+     * **Outputs:** Returns a `UiFormSpecifier` representing the return book form.
+     */
+    UiFormSpecifier buildRequestReturnBookForm(MyLibraryBorrowed borrowed) {
+        // TODO 3.13.1: Create a new UiFormSpecifier named requestBookFormSpecifier.
+        // TODO 3.13.2: Define requestBookFormSpecifier.ui block for borrowed.
+        // Inside ui block:
+        // - TODO 3.13.3: Define a section titled "Request Return Book Form".
+        //   - TODO 3.13.4: Add field for borrowed.returnDate_.
+        // - TODO 3.13.5: Define formAction linking to MyLibraryController.saveReturnBookForm as MC.
+
+        //delete this line when method implemented
+        return new UiFormSpecifier()
+    }
+
+
+    /**
+     * Builds a read-only detail view specifier for displaying information about a borrow record.
+     *
+     * **Purpose:** Generates a UI specifier to show all relevant details of a borrowed book record in a non-editable format.
+     *
+     * **How it works (to implement):**
+     * - Creates a new `UiShowSpecifier` for the borrow record.
+     * - Defines a UI block displaying the following fields using `fieldLabeled`:
+     *   - Book title.
+     *   - Book author.
+     *   - Username of the user who borrowed the book.
+     *   - Status of approval.
+     *   - Request date.
+     *   - Approval date.
+     *   - Return date.
+     *
+     * **Inputs:**
+     * - `borrowed`: The borrow record whose details are to be shown.
+     *
+     * **Outputs:** Returns a `UiShowSpecifier` configured to display the borrow record's details.
+     */
+    UiShowSpecifier buildBorrowedShow(MyLibraryBorrowed borrowed) {
+        // TODO 3.19.1: Create a new UiShowSpecifier named borrowedShowSpecifier.
+        // TODO 3.19.2: Define borrowedShowSpecifier.ui block for the given borrowed record.
+        // Inside ui block:
+        // - TODO 3.19.3: Add fieldLabeled for borrowed.bookInstance.book.title_.
+        // - TODO 3.19.4: Add fieldLabeled for borrowed.bookInstance.book.author_.
+        // - TODO 3.19.5: Add fieldLabeled for borrowed.user.username_.
+        // - TODO 3.19.6: Add fieldLabeled for borrowed.statusOfApproval_.
+        // - TODO 3.19.7: Add fieldLabeled for borrowed.requestDate_.
+        // - TODO 3.19.8: Add fieldLabeled for borrowed.approvalDate_.
+        // - TODO 3.19.9: Add fieldLabeled for borrowed.returnDate_.
+
+        //delete this line when method implemented
+        return new UiShowSpecifier()
+    }
 
 
 

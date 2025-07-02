@@ -217,7 +217,7 @@ class MyLibraryController implements WebAttributes {
      * **Outputs:** Displays a modal for author selection.
      */
     def selectAuthor() {
-        UiTableSpecifier tableAuthorSpecifier = myLibraryUiService.buildAuthorTable(true) //(1)
+        UiTableSpecifier tableAuthorSpecifier = myLibraryUiService.buildAuthorTable(true)
         UiFilterSpecifier filterAuthorSpecifier = myLibraryUiService.buildAuthorFilter()
         taackUiService.show(new UiBlockSpecifier().ui {
             modal {
@@ -436,18 +436,266 @@ class MyLibraryController implements WebAttributes {
         bookInstance.save(flush: true, validate: false)
 
         taackUiService.show new UiBlockSpecifier().ui {
-            closeModalAndUpdateBlock { //<1>
+            closeModalAndUpdateBlock {
                 tableFilter(
-                        myLibraryUiService.buildBookFilter(), //<2>
-                        myLibraryUiService.buildBookTable(), //<2>
+                        myLibraryUiService.buildBookFilter(),
+                        myLibraryUiService.buildBookTable(),
                 ) {
-                    menuIcon ActionIcon.CREATE, this.&createBook as MethodClosure //<2>
+                    menuIcon ActionIcon.CREATE, this.&createBook as MethodClosure
                 }
                 modal {
-                    table bookInstanceTable //<3>
+                    table bookInstanceTable
                 }
             }
         }
     }
+
+
+    /**
+     * Opens a modal form for requesting to borrow a specific book.
+     *
+     * **Purpose:** Displays the book request form inside a modal window, allowing users to submit their borrow requests.
+     *
+     * **How it works (to implement):**
+     * - Build the request book form specifier by calling `myLibraryUiService.buildRequestBookForm(book)`.
+     * - Use `taackUiService.show` to render a modal containing the form.
+     *
+     * **Inputs:**
+     * - `book`: The book the user wants to request.
+     *
+     * **Outputs:** Displays the modal request form to the user.
+     */
+    def requestBookInstance(MyLibraryBook book){
+        // TODO 3.5.1: Build requestBookInstanceForm by calling myLibraryUiService.buildRequestBookForm(book).
+        // TODO 3.5.2: Use taackUiService.show to render a UiBlockSpecifier.
+        // Inside show block:
+        // - TODO 3.5.3: Define a modal block.
+        //   - TODO 3.5.4: Add form using requestBookInstanceForm.
+    }
+
+
+    /**
+     * Opens a modal displaying a table of book instances for a specific book, allowing the user to select one instance.
+     *
+     * **Purpose:** Provides a selection interface for choosing a single available book instance, typically used in forms where the user needs to select which specific copy they want to borrow.
+     *
+     * **How it works (to implement):**
+     * - Builds the book instance table specifier by calling `myLibraryUiService.buildInstanceBookTable(book, true)`, enabling selection mode.
+     * - Uses `taackUiService.show` to render a modal containing the table for selection.
+     *
+     * **Inputs:**
+     * - `book`: The book whose instances are to be listed for selection.
+     *
+     * **Outputs:** Displays a modal with a selectable table of book instances.
+     */
+    def selectBookInstanceOne(MyLibraryBook book) {
+        // TODO 3.9.1: Build bookInstanceTable by calling myLibraryUiService.buildInstanceBookTable(book, true).
+        // TODO 3.9.2: Use taackUiService.show to render a UiBlockSpecifier.
+        // Inside show block:
+        // - TODO 3.9.3: Define a modal block.
+        //   - TODO 3.9.4: Add table using bookInstanceTable.
+    }
+
+
+
+    /**
+     * Saves a new book borrow request and marks the selected book instance as unavailable.
+     *
+     * **Purpose:** Persists the borrow request in the database and updates the availability status of the selected book instance.
+     *
+     * **How it works (to implement):**
+     * - Save the `MyLibraryBorrowed` object using `taackSaveService.save`.
+     * - If a book instance is associated with the borrow record, set its `isAvailableB` property to false to mark it as unavailable.
+     * - Use `taackSaveService.redirectOrRenderErrors` to redirect if saving succeeded or re-render the form with validation errors if it failed.
+     *
+     * **Inputs:** None directly; uses request parameters bound to MyLibraryBorrowed.
+     *
+     * **Outputs:** Saves the borrow request, updates availability status, and redirects or renders errors accordingly.
+     */
+    @Transactional
+    def saveBookForm() {
+        // TODO 3.6.1: Save MyLibraryBorrowed object using taackSaveService.save and store it in borrowed.
+        // TODO 3.6.2: If borrowed.bookInstance is not null, set its isAvailableB property to false.
+        // TODO 3.6.3: Call taackSaveService.redirectOrRenderErrors with borrowed.
+    }
+
+
+    /*------------------------------------------------------------*/
+    /* Borrowed menu                                              */
+    /*------------------------------------------------------------*/
+
+    /**
+     * Displays a table of books that are currently borrowed, along with a filter bar.
+     *
+     * **Purpose:** Allows users or librarians to view all books currently borrowed, with filtering options.
+     *
+     * **How it works (to implement):**
+     * - Build the table specifier for currently borrowed books by calling `myLibraryUiService.buildUserBorrowsTable(true)`.
+     * - Build the filter specifier for borrowed books by calling `myLibraryUiService.buildUserBorrowsFilter()`.
+     * - Use `taackUiService.show` to render a UI block containing:
+     *   - A tableFilter combining the filter and table specifiers.
+     * - Include the general menu by calling `myLibraryUiService.buildMenu()`.
+     *
+     * **Inputs:** None directly; uses service methods to build UI components.
+     *
+     * **Outputs:** Renders the current borrowings table with a filter bar.
+     */
+    def listBooksCurrentlyBorrowed() {
+        // TODO 3.3.1: Build tableUserBorrowsSpecifier by calling myLibraryUiService.buildUserBorrowsTable(true).
+        // TODO 3.3.2: Build filterUserBorrowsSpecifier by calling myLibraryUiService.buildUserBorrowsFilter().
+        // TODO 3.3.3: Use taackUiService.show to render a UiBlockSpecifier.
+        // Inside show block:
+        // - TODO 3.3.4: Add tableFilter combining filterUserBorrowsSpecifier and tableUserBorrowsSpecifier.
+        // TODO 3.3.5: Include the general menu by calling myLibraryUiService.buildMenu().
+    }
+
+    /**
+     * Opens a modal form to record the return of a borrowed book.
+     *
+     * **Purpose:** Displays the return form in a modal window, allowing users or librarians to input the return date when a borrowed book is returned.
+     *
+     * **How it works (to implement):**
+     * - Builds the return book form specifier by calling `myLibraryUiService.buildRequestReturnBookForm(borrowed)`.
+     * - Uses `taackUiService.show` to render a modal containing the return form.
+     *
+     * **Inputs:**
+     * - `borrowed`: The borrow record for which the return is being recorded.
+     *
+     * **Outputs:** Displays the modal return form to the user.
+     */
+    def returnBook(MyLibraryBorrowed borrowed) {
+        // TODO 3.15.1: Build requestReturnBookInstanceForm by calling myLibraryUiService.buildRequestReturnBookForm(borrowed).
+        // TODO 3.15.2: Use taackUiService.show to render a UiBlockSpecifier.
+        // Inside show block:
+        // - TODO 3.15.3: Define a modal block.
+        //   - TODO 3.15.4: Add form using requestReturnBookInstanceForm.
+    }
+
+    /**
+     * Saves the return of a borrowed book and marks the book instance as available again.
+     *
+     * **Purpose:** Persists the return date for a borrow record and updates the availability status of the associated book instance to indicate it can be borrowed again.
+     *
+     * **How it works (to implement):**
+     * - Saves the `MyLibraryBorrowed` object using `taackSaveService.save`.
+     * - If a book instance is associated with the borrow record, sets its `isAvailableB` property to true to mark it as available.
+     * - Calls `taackSaveService.redirectOrRenderErrors` with the saved borrow record to handle UI redirection or re-rendering with errors.
+     *
+     * **Inputs:** None directly; uses request parameters bound to MyLibraryBorrowed.
+     *
+     * **Outputs:** Saves the return information, updates the book instance availability, and redirects or renders errors accordingly.
+     */
+    @Transactional
+    def saveReturnBookForm() {
+        // TODO 3.17.1: Save MyLibraryBorrowed object using taackSaveService.save and store it in borrowed.
+        // TODO 3.17.2: If borrowed.bookInstance is not null, set its isAvailableB property to true.
+        // TODO 3.17.3: Call taackSaveService.redirectOrRenderErrors with borrowed.
+    }
+
+
+    /*------------------------------------------------------------*/
+    /* History menu                                               */
+    /*------------------------------------------------------------*/
+
+    /**
+     * Displays a table of all books that have been borrowed in the past, along with a filter bar.
+     *
+     * **Purpose:** Allows users or librarians to view all past borrow records with filtering options.
+     *
+     * **How it works (to implement):**
+     * - Builds the table specifier for borrowed books by calling `myLibraryUiService.buildUserBorrowsTable()` without the `isCurrently` flag, showing past borrowings.
+     * - Builds the filter specifier for borrowed books by calling `myLibraryUiService.buildUserBorrowsFilter()`.
+     * - Uses `taackUiService.show` to render a UI block containing:
+     *   - A tableFilter combining the filter and table specifiers.
+     * - Includes the general menu built by `myLibraryUiService.buildMenu()`.
+     *
+     * **Inputs:** None directly; uses service methods to build UI components.
+     *
+     * **Outputs:** Renders the borrow records table with a filter bar for past borrowings.
+     */
+    def listBooksBorrowed() {
+        // TODO 4.1.1: Build tableUserBorrowsSpecifier by calling myLibraryUiService.buildUserBorrowsTable().
+        // TODO 4.1.2: Build filterUserBorrowsSpecifier by calling myLibraryUiService.buildUserBorrowsFilter().
+        // TODO 4.1.3: Use taackUiService.show to render a UiBlockSpecifier.
+        // Inside show block:
+        // - TODO 4.1.4: Add tableFilter combining filterUserBorrowsSpecifier and tableUserBorrowsSpecifier.
+        // TODO 4.1.5: Include the general menu by calling myLibraryUiService.buildMenu().
+    }
+
+
+    /**
+     * Opens a modal displaying the details of a borrow record in read-only format.
+     *
+     * **Purpose:** Allows users or librarians to view all information related to a specific borrowed book record in a non-editable modal window.
+     *
+     * **How it works (to implement):**
+     * - Builds the show specifier for the borrow record by calling `myLibraryUiService.buildBorrowedShow(borrowed)`.
+     * - Uses `taackUiService.show` to render a modal containing the show specifier.
+     *
+     * **Inputs:**
+     * - `borrowed`: The borrow record whose details are to be displayed.
+     *
+     * **Outputs:** Displays the modal showing the borrow record's details.
+     */
+    def showBorrowed(MyLibraryBorrowed borrowed) {
+        // TODO 3.20.1: Build showSpec by calling myLibraryUiService.buildBorrowedShow(borrowed).
+        // TODO 3.20.2: Use taackUiService.show to render a UiBlockSpecifier.
+        // Inside show block:
+        // - TODO 3.20.3: Define a modal block.
+        //   - TODO 3.20.4: Add show using showSpec.
+    }
+
+
+    /*------------------------------------------------------------*/
+    /* Requests menu                                              */
+    /*------------------------------------------------------------*/
+
+    /**
+     * Opens a modal form to approve a book borrow request.
+     *
+     * **Purpose:** Displays the approval form in a modal window, allowing librarians to set the approval date and status for a borrow request.
+     *
+     * **How it works (to implement):**
+     * - Builds the approval form specifier by calling `myLibraryUiService.buildApproveBookTable(borrowed)`.
+     * - Uses `taackUiService.show` to render a modal containing the approval form.
+     *
+     * **Inputs:**
+     * - `borrowed`: The borrow record being approved.
+     *
+     * **Outputs:** Displays the modal approval form to the user.
+     */
+    def approveBook(MyLibraryBorrowed borrowed) {
+        // TODO 3.14.1: Build approveBookSpecifier by calling myLibraryUiService.buildApproveBookTable(borrowed).
+        // TODO 3.14.2: Use taackUiService.show to render a UiBlockSpecifier.
+        // Inside show block:
+        // - TODO 3.14.3: Define a modal block.
+        //   - TODO 3.14.4: Add form using approveBookSpecifier.
+    }
+
+
+    /**
+     * Saves the approval status of a book borrow request and updates its return date if rejected.
+     *
+     * **Purpose:** Persists approval decisions for borrow requests, and if the request is rejected, sets a placeholder far-future return date.
+     *
+     * **How it works (to implement):**
+     * - Creates a `Calendar` instance and sets its date to December 31, year 999999 as a placeholder.
+     * - Saves the `MyLibraryBorrowed` object using `taackSaveService.save`.
+     * - Checks if the approval status is `REJECTED`:
+     *   - If so, sets the borrow record's `returnDate` to the far-future placeholder date.
+     * - Calls `taackSaveService.redirectOrRenderErrors` with the saved borrow record to handle UI redirection or re-rendering with errors.
+     *
+     * **Inputs:** None directly; uses request parameters bound to MyLibraryBorrowed.
+     *
+     * **Outputs:** Saves the approval decision, updates return date if rejected, and redirects or renders errors accordingly.
+     */
+    @Transactional
+    def saveApprovalBookForm() {
+        // TODO 3.16.1: Create a Calendar instance and set its date to December 31, year 999999 as a placeholder.
+        // TODO 3.16.2: Save MyLibraryBorrowed object using taackSaveService.save and store it in borrowed.
+        // TODO 3.16.3: If borrowed.statusOfApproval equals ApprovalStatus.REJECTED, set borrowed.returnDate to the placeholder date.
+        // TODO 3.16.4: Call taackSaveService.redirectOrRenderErrors with borrowed.
+    }
+
 
 }

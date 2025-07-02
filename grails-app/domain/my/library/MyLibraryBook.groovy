@@ -8,17 +8,9 @@ import taack.ast.annotation.TaackFieldEnum
  *
  * **Purpose:** Stores book details and links to its physical instances.
  *
- * **To implement:**
- * - Fields:
- *   - title (String)
- *   - author (MyLibraryAuthor)
- *   - description (String)
- *   - numberOfPages (int)
- *   - listOfBookInstance (List<MyLibraryBookInstance>), declare and initialize this list
- *   - count (int, default 0) to store the active instances count
- * - Relationship: hasMany listOfBookInstance (List<MyLibraryBookInstance>)
+ * **To implement (TODO 1.2 for added elements only):**
  * - Method:
- *   - getNumberOfInstances(): returns the number of active book instances (where isActive is true).
+ *   - getNumberOfBooksBorrowable(): returns the count of available and active book instances for this book.
  */
 @GrailsCompileStatic
 @TaackFieldEnum
@@ -39,4 +31,9 @@ class MyLibraryBook {
         count = listOfBookInstance.count {it.isActive} as int
         return count
     }
+
+    // TODO 1.1.1: Implement getNumberOfBooksBorrowable() to return the count of MyLibraryBookInstance where:
+    // - isAvailableB is true
+    // - isActive is true
+    // - book equals this book instance
 }
