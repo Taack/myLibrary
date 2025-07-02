@@ -121,7 +121,7 @@ class MyLibraryUiService implements WebAttributes {
         UiFilterSpecifier isActiveAuthorFilter = new UiFilterSpecifier()
         isActiveAuthorFilter.ui MyLibraryAuthor, {
             section "Filter", {
-                // TODO 2.2.1: Add a filterFieldExpressionBool as shown in the example above.
+                filterFieldExpressionBool "Is Active", new FilterExpression(true, Operator.EQ, author.isActive_)
             }
         }
     }
@@ -143,12 +143,12 @@ class MyLibraryUiService implements WebAttributes {
      * **Outputs:** Returns a `UiFilterSpecifier` configured to filter authors by last name.
      */
     UiFilterSpecifier buildAuthorFilter() {
-        // TODO 2.2.2.1: Create a new instance of MyLibraryAuthor.
+        MyLibraryAuthor author = new MyLibraryAuthor()
         UiFilterSpecifier authorFilterSpecifier = new UiFilterSpecifier()
 
         authorFilterSpecifier.ui MyLibraryAuthor, {
             section "Author Filter", {
-                // TODO 2.2.2.2: Add a filterField for author's lastName_.
+                filterField author.lastName_
             }
         }
     }
@@ -189,41 +189,40 @@ class MyLibraryUiService implements WebAttributes {
      * - Remember to cast controller method references with `as MC` when used as closures in actions.
      */
     UiTableSpecifier buildAuthorTable(Boolean isSelect = false) {
-
         MyLibraryAuthor author = new MyLibraryAuthor()
         UiTableSpecifier authorTableSpecifier = new UiTableSpecifier()
 
         authorTableSpecifier.ui {
             header {
-                column {
-                    // TODO 2.1.1: Add label for author's first name using author.firstName_
-                }
-                // TODO 2.1.2: Add label for author's last name using author.lastName_
+                column {label author.firstName_}
+                label author.lastName_
                 if(!isSelect) {
-                    // TODO 2.1.3: Add label for isActive status and "Delete Author" action column if not in select mode
+                    label author.isActive_
+                    label "Delete Author"
                 }
             }
 
             TaackFilter.FilterBuilder filter = taackFilterService.getBuilder(MyLibraryAuthor)
-            // TODO 2.1.4: Add the following requirements to the filter:
-            // - max 10 lines per page using setMaxNumberOfLine()
-            // - ascending order by last name using setSortOrder(TaackFilter.Order order, FieldInfo field)
-            // - add active filter if isSelect is true, implemented later on: buildIsActiveAuthorFilter(author)
+                    .setMaxNumberOfLine(10)
+                    .setSortOrder(TaackFilter.Order.ASC, author.lastName_)
 
+            if(isSelect) {
+                filter.addFilter(buildIsActiveAuthorFilter(author))
+            }
             iterate(
                     filter.build()) { MyLibraryAuthor authorIterator ->
                 rowColumn {
-                    // TODO 2.10: Add rowAction to showAuthor with author's first name as label
+                    rowAction authorIterator.firstName, MyLibraryController.&showAuthor as MC, authorIterator.id
                     if (isSelect) {
-                        // TODO 3: Add SELECT action icon to select author with their id and string representation
+                        // TODO 3.5.6: Add SELECT action icon to select author with their id and string representation
                     }
                 }
-                // TODO 2.1.5: Display author's last name as rowField
+                rowField authorIterator.lastName_
                 if(!isSelect) {
-                    // TODO 2.1.6: Display isActive status
+                    rowField authorIterator.isActive_
                     rowColumn {
-                        // TODO 2.7.1: Add DELETE action icon linked to deleteAuthor controller action
-                        // TODO 2.7.2: Add ACTIVATE action icon linked to activateAuthor controller action
+                        rowAction ActionIcon.DELETE * IconStyle.SCALE_DOWN, MyLibraryController.&deleteAuthor as MC, authorIterator.id
+                        rowAction ActionIcon.CREATE * IconStyle.SCALE_DOWN, MyLibraryController.&activateAuthor as MC, authorIterator.id
                     }
                 }
             }
@@ -256,13 +255,16 @@ class MyLibraryUiService implements WebAttributes {
      * Adds a form field for the author's first name.
      */
     UiFormSpecifier buildAuthorForm(MyLibraryAuthor author) {
-        // TODO 2.4.1: If author is null, initialize it with new MyLibraryAuthor(params).
+        author ?= new MyLibraryAuthor(params)
         UiFormSpecifier createAuthorSpecifier = new UiFormSpecifier()
         createAuthorSpecifier.ui author, {
             section "Author details", {
-                // TODO 2.4.2: Add fields for firstName, lastName, dateOfBirth, and isActive as shown in the example.
+                field author.firstName_
+                field author.lastName_
+                field author.dateOfBirth_
+                field author.isActive_
             }
-            // TODO 2.4.3: Define formAction linking to MyLibraryController.saveAuthor as MC.
+            formAction MyLibraryController.&saveAuthor as MC
         }
     }
 
@@ -289,7 +291,10 @@ class MyLibraryUiService implements WebAttributes {
         UiShowSpecifier authorShowSpecifier = new UiShowSpecifier()
 
         authorShowSpecifier.ui(author, {
-            // TODO 2.11: Add fieldLabeled lines to display firstName, lastName, dateOfBirth, and isActive fields.
+            fieldLabeled author.firstName_
+            fieldLabeled author.lastName_
+            fieldLabeled author.dateOfBirth_
+            fieldLabeled author.isActive_
         })
     }
 
