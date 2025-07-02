@@ -217,13 +217,15 @@ class MyLibraryController implements WebAttributes {
      * **Outputs:** Displays a modal for author selection.
      */
     def selectAuthor() {
-        // TODO 3.5.1: Build tableAuthorSpecifier by calling myLibraryUiService.buildAuthorTable(true).
-        // TODO 3.5.2: Build filterAuthorSpecifier by calling myLibraryUiService.buildAuthorFilter().
-        // TODO 3.5.3: Use taackUiService.show to render a UiBlockSpecifier.
-        // Inside show block:
-        // - TODO 3.5.4: Define a modal block.
-        //   - TODO 3.5.5: Add tableFilter combining filterAuthorSpecifier and tableAuthorSpecifier.
+        UiTableSpecifier tableAuthorSpecifier = myLibraryUiService.buildAuthorTable(true) //(1)
+        UiFilterSpecifier filterAuthorSpecifier = myLibraryUiService.buildAuthorFilter()
+        taackUiService.show(new UiBlockSpecifier().ui {
+            modal {
+                tableFilter filterAuthorSpecifier, tableAuthorSpecifier
+            }
+        })
     }
+
 
     /*------------------------------------------------------------*/
     /* Book menu                                                  */
@@ -250,13 +252,14 @@ class MyLibraryController implements WebAttributes {
      * **Outputs:** Renders the book list screen with filtering and creation options.
      */
     def listBook() {
-        // TODO 3.3.1: Build tableBookSpecifier by calling myLibraryUiService.buildBookTable().
-        // TODO 3.3.2: Build filterBookSpecifier by calling myLibraryUiService.buildBookFilter().
-        // TODO 3.3.3: Use taackUiService.show to render a UiBlockSpecifier.
-        // Inside show block:
-        // - TODO 3.3.4: Add tableFilter combining filterBookSpecifier and tableBookSpecifier.
-        // - TODO 3.3.5: Add menuIcon for CREATE action linked to createBook.
-        // TODO 3.3.6: Include the general menu by calling myLibraryUiService.buildMenu().
+        UiTableSpecifier tableBookSpecifier = myLibraryUiService.buildBookTable()
+        UiFilterSpecifier filterBookSpecifier = myLibraryUiService.buildBookFilter()
+
+        taackUiService.show(new UiBlockSpecifier().ui {
+            tableFilter filterBookSpecifier, tableBookSpecifier, {
+                menuIcon ActionIcon.CREATE, this.&createBook as MethodClosure
+            }
+        }, myLibraryUiService.buildMenu())
     }
 
     /**
@@ -274,11 +277,13 @@ class MyLibraryController implements WebAttributes {
      * **Outputs:** Displays the modal form to the user.
      */
     def createBook(MyLibraryBook book) {
-        // TODO 3.6.1: Build tableFormSpecifier by calling myLibraryUiService.buildBookForm(book).
-        // TODO 3.6.2: Use taackUiService.show to render a UiBlockSpecifier.
-        // Inside show block:
-        // - TODO 3.6.3: Define a modal block.
-        //   - TODO 3.6.4: Add form using tableFormSpecifier.
+        UiFormSpecifier tableFormSpecifier = myLibraryUiService.buildBookForm(book)
+
+        taackUiService.show new UiBlockSpecifier().ui {
+            modal {
+                form tableFormSpecifier
+            }
+        }
     }
 
     /**
@@ -296,11 +301,13 @@ class MyLibraryController implements WebAttributes {
      * **Outputs:** Displays the modal form to the user.
      */
     def purchaseBook(MyLibraryBook book) {
-        // TODO 3.10.1: Build tableAddBookInstanceSpecifier by calling myLibraryUiService.buildBookPurchase(book).
-        // TODO 3.10.2: Use taackUiService.show to render a UiBlockSpecifier.
-        // Inside show block:
-        // - TODO 3.10.3: Define a modal block.
-        //   - TODO 3.10.4: Add form using tableAddBookInstanceSpecifier.
+        UiFormSpecifier tableAddBookInstanceSpecifier = myLibraryUiService.buildBookPurchase(book)
+
+        taackUiService.show new UiBlockSpecifier().ui {
+            modal {
+                form tableAddBookInstanceSpecifier
+            }
+        }
     }
 
     /**
@@ -324,12 +331,12 @@ class MyLibraryController implements WebAttributes {
      */
     @Transactional
     def purchaseAndSaveBook(NumberForInstances numberForInstances, MyLibraryBook book) {
-        // TODO 3.11.1: Loop from i = 0 to numberForInstances.numberOfInstances.
-        // Inside loop:
-        // - TODO 3.11.2: Create a new MyLibraryBookInstance named newBookInstance.
-        // - TODO 3.11.3: Set newBookInstance.book to book.
-        // - TODO 3.11.4: Add newBookInstance to book.listOfBookInstance.
-        // TODO 3.11.5: After loop, call taackUiService.ajaxReload() to refresh the UI.
+        for (int i = 0; i < (numberForInstances.numberOfInstances) as Integer; i++) {
+            MyLibraryBookInstance newBookInstance = new MyLibraryBookInstance()
+            newBookInstance.book = book
+            book.addToListOfBookInstance(newBookInstance)
+        }
+        taackUiService.ajaxReload()
     }
 
     /**
@@ -349,7 +356,7 @@ class MyLibraryController implements WebAttributes {
      */
     @Transactional
     def saveBook() {
-        // TODO 3.7: Call taackSaveService.saveThenReloadOrRenderErrors with MyLibraryBook to handle saving and reloading logic.
+        taackSaveService.saveThenReloadOrRenderErrors(MyLibraryBook)
     }
 
     /**
@@ -367,11 +374,13 @@ class MyLibraryController implements WebAttributes {
      * **Outputs:** Displays a modal showing the book's details.
      */
     def showBook(MyLibraryBook book) {
-        // TODO 3.15.1: Build showBookSpecifier by calling myLibraryUiService.buildBookShow(book).
-        // TODO 3.15.2: Use taackUiService.show to render a UiBlockSpecifier.
-        // Inside show block:
-        // - TODO 3.15.3: Define a modal block.
-        //   - TODO 3.15.4: Add show using showBookSpecifier.
+        UiShowSpecifier showBookSpecifier = myLibraryUiService.buildBookShow(book)
+
+        taackUiService.show(new UiBlockSpecifier().ui {
+            modal {
+                show showBookSpecifier
+            }
+        })
     }
 
     /**
@@ -389,11 +398,13 @@ class MyLibraryController implements WebAttributes {
      * **Outputs:** Displays a modal listing all instances of the book.
      */
     def selectBookInstance(MyLibraryBook book) {
-        // TODO 3.12.1: Build bookInstanceTableSpecifier by calling myLibraryUiService.buildInstanceBookTable(book).
-        // TODO 3.12.2: Use taackUiService.show to render a UiBlockSpecifier.
-        // Inside show block:
-        // - TODO 3.12.3: Define a modal block (with true flag).
-        //   - TODO 3.12.4: Add table using bookInstanceTableSpecifier.
+        UiTableSpecifier bookInstanceTableSpecifier = myLibraryUiService.buildInstanceBookTable(book)
+
+        taackUiService.show new UiBlockSpecifier().ui {
+            modal true, {
+                table bookInstanceTableSpecifier
+            }
+        }
     }
 
     /**
@@ -418,17 +429,25 @@ class MyLibraryController implements WebAttributes {
      */
     @Transactional
     def deleteBookInstances(MyLibraryBookInstance bookInstance) {
-        // TODO 3.18.1: Retrieve the book by calling MyLibraryBook.get with params.bookId.
-        // TODO 3.18.2: Build bookInstanceTable by calling myLibraryUiService.buildInstanceBookTable(book).
-        // TODO 3.18.3: Set bookInstance.isActive to false.
-        // TODO 3.18.4: Save bookInstance with flush true and validate false.
-        // TODO 3.18.5: Use taackUiService.show to render a UiBlockSpecifier.
-        // Inside show block:
-        // - TODO 3.18.6: Define closeModalAndUpdateBlock.
-        //   Inside closeModalAndUpdateBlock:
-        //   - TODO 3.18.7: Add tableFilter combining myLibraryUiService.buildBookFilter() and buildBookTable().
-        //   - TODO 3.18.8: Add menuIcon for CREATE action linked to createBook.
-        //   - TODO 3.18.9: Add modal block containing table bookInstanceTable.
+        MyLibraryBook book = MyLibraryBook.get(params.long('bookId'))
+        UiTableSpecifier bookInstanceTable = myLibraryUiService.buildInstanceBookTable(book)
+
+        bookInstance.isActive = false
+        bookInstance.save(flush: true, validate: false)
+
+        taackUiService.show new UiBlockSpecifier().ui {
+            closeModalAndUpdateBlock { //<1>
+                tableFilter(
+                        myLibraryUiService.buildBookFilter(), //<2>
+                        myLibraryUiService.buildBookTable(), //<2>
+                ) {
+                    menuIcon ActionIcon.CREATE, this.&createBook as MethodClosure //<2>
+                }
+                modal {
+                    table bookInstanceTable //<3>
+                }
+            }
+        }
     }
 
 }

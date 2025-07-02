@@ -214,7 +214,7 @@ class MyLibraryUiService implements WebAttributes {
                 rowColumn {
                     rowAction authorIterator.firstName, MyLibraryController.&showAuthor as MC, authorIterator.id
                     if (isSelect) {
-                        // TODO 3.5.6: Add SELECT action icon to select author with their id and string representation
+                        rowAction tr('default.role.label'), ActionIcon.SELECT * IconStyle.SCALE_DOWN, authorIterator.id, authorIterator.toString()
                     }
                 }
                 rowField authorIterator.lastName_
@@ -322,30 +322,46 @@ class MyLibraryUiService implements WebAttributes {
      * **Outputs:** Returns a `UiTableSpecifier` rendering the book table with appropriate columns and actions.
      */
     UiTableSpecifier buildBookTable(MyLibraryAuthor author = null) {
-        // TODO 3.1.1: Create a new instance of MyLibraryBook named book.
-        // TODO 3.1.2: Create a new UiTableSpecifier named bookTableSpecifier.
-        // TODO 3.1.3: Define bookTableSpecifier.ui block.
-        // Inside ui block:
-        // - TODO 3.1.4: Define header block.
-        //   - TODO 3.1.5: Add column for book title with label.
-        //   - TODO 3.1.6: If author is null, add sortableFieldHeader for book author.
-        //   - TODO 3.1.7: Add column for "Number of instances".
-        //   - TODO 3.1.8: If author is null, add column for "Modify number of Book Instances".
-        // - TODO 3.1.9: Build filter for MyLibraryBook using taackFilterService.getBuilder.
-        //   - Set max number of lines to 10.
-        //   - Set sort order by title ascending.
-        //   - If author is provided, restrict filter to books by that author using addRestrictedIds(author.listOfBooks*.id as Long[])
-        // - TODO 3.1.10: Iterate over filter results using iterate(filter.build()).
-        //   Inside iterate block:
-        //   - TODO 3.1.11: Display title field.
-        //   - TODO 3.1.12: Add EDIT (createBook) action with title field in a rowColumn, this will be used to modify a book.
-        //   - TODO 3.13: Add SHOW (showBook) action above title field in the rowColumn.
-        //   - TODO 3.1.13: If author is null, display author field.
-        //   - TODO 3.8.1: Display number of instances (call getNumberOfInstances) and show as rowField.
-        //   - TODO 3.8.2: If author is null, add DELETE and ADD actions for managing book instances.
-
-        //delete the following statement when method implemented
-        return new UiTableSpecifier()
+        MyLibraryBook book = new MyLibraryBook()
+        UiTableSpecifier bookTableSpecifier = new UiTableSpecifier()
+        bookTableSpecifier.ui {
+            header {
+                column {label book.title_}
+                if (!author) {sortableFieldHeader book.author_}
+                column {
+                    label "Number of instances "//book.numberOfInstances
+                }
+                if (!author) {
+                    column {
+                        label "Modify number of Book Instances" //only for ADMIN
+                    }
+                }
+            }
+            TaackFilter.FilterBuilder filter =  taackFilterService.getBuilder(MyLibraryBook)
+                    .setMaxNumberOfLine(10)
+                    .setSortOrder(TaackFilter.Order.ASC, book.title_)
+            if(author) {
+                filter.addRestrictedIds(author.listOfBooks*.id as Long[])
+            }
+            iterate(
+                    filter.build()) { MyLibraryBook bookIterator ->
+                rowColumn {
+                    rowAction ActionIcon.SHOW * IconStyle.SCALE_DOWN, MyLibraryController.&showBook as MC, bookIterator.id
+                    rowAction ActionIcon.EDIT * IconStyle.SCALE_DOWN, MyLibraryController.&createBook as MC, bookIterator.id
+                    rowField bookIterator.title_
+                }
+                if (!author) {rowField bookIterator.author_}
+                rowColumn {
+                    rowField bookIterator.numberOfInstances_
+                }
+                if (!author) {
+                    rowColumn {
+                        rowAction ActionIcon.DELETE * IconStyle.SCALE_DOWN, MyLibraryController.&selectBookInstance as MC, bookIterator.id
+                        rowAction ActionIcon.ADD * IconStyle.SCALE_DOWN, MyLibraryController.&purchaseBook as MC, bookIterator.id
+                    }
+                }
+            }
+        }
     }
 
     /**
@@ -371,20 +387,17 @@ class MyLibraryUiService implements WebAttributes {
      * **Outputs:** Returns a `UiFormSpecifier` representing the book form for creation or editing.
      */
     UiFormSpecifier buildBookForm(MyLibraryBook book) {
-        // TODO 3.4.1: If book is null, initialize it with new MyLibraryBook(params).
-        // TODO 3.4.2: Create a new UiFormSpecifier named bookFormSpecifier.
-        // TODO 3.4.3: Define bookFormSpecifier.ui block.
-        // Inside ui block:
-        // - TODO 3.4.4: Define a section titled "Book details".
-        //   - TODO 3.4.5: Add field for book.title_.
-        //   - TODO 3.4.6: Add ajaxField for book.author_ linked to MyLibraryController.&selectAuthor.
-        //       Example:  ajaxField FieldInfo, MyLibraryController.&methode as MC
-        //   - TODO 3.4.7: Add field for book.numberOfPages_.
-        //   - TODO 3.4.8: Add field for book.description_.
-        // - TODO 3.4.9: Define formAction linking to MyLibraryController.saveBook as MC.
-
-        //delete the following statement when method implemented
-        return new UiFormSpecifier()
+        book ?= new MyLibraryBook(params)
+        UiFormSpecifier bookFormSpecifier = new UiFormSpecifier()
+        bookFormSpecifier.ui book, {
+            section "Book details", {
+                field book.title_
+                ajaxField book.author_, MyLibraryController.&selectAuthor as MC //(1)
+                field book.numberOfPages_
+                field book.description_
+            }
+            formAction MyLibraryController.&saveBook as MC
+        }
     }
 
     /**
@@ -404,15 +417,14 @@ class MyLibraryUiService implements WebAttributes {
      * **Outputs:** Returns a `UiFilterSpecifier` configured to filter books by title.
      */
     UiFilterSpecifier buildBookFilter() {
-        // TODO 3.2.1: Create a new instance of MyLibraryBook named book.
-        // TODO 3.2.2: Create a new UiFilterSpecifier named bookFilterSpecifier.
-        // TODO 3.2.3: Define bookFilterSpecifier.ui block.
-        // Inside ui block:
-        // - TODO 3.2.4: Define a section titled "Book Filter".
-        //   - TODO 3.2.5: Add filterField for book.title_.
+        MyLibraryBook book = new MyLibraryBook()
+        UiFilterSpecifier bookFilterSpecifier = new UiFilterSpecifier()
 
-        //delete the following statement when method implemented
-        return new UiFilterSpecifier()
+        bookFilterSpecifier.ui MyLibraryBook, {
+            section "Book Filter", {
+                filterField book.title_
+            }
+        }
     }
 
     /**
@@ -435,17 +447,15 @@ class MyLibraryUiService implements WebAttributes {
      * **Outputs:** Returns a `UiFormSpecifier` representing the purchase form.
      */
     UiFormSpecifier buildBookPurchase(MyLibraryBook book) {
-        // TODO 3.9.1: Create a new instance of NumberForInstances named numberForInstances.
-        // TODO 3.9.2: If book is null, initialize it with new MyLibraryBook(params).
-        // TODO 3.9.3: Create a new UiFormSpecifier named bookPurchaseSpecifier.
-        // TODO 3.9.4: Define bookPurchaseSpecifier.ui block.
-        // Inside ui block:
-        // - TODO 3.9.5: Define a section titled "Purchase Number".
-        //   - TODO 3.9.6: Add field for numberForInstances.numberOfInstances_.
-        // - TODO 3.9.7: Define formAction linking to MyLibraryController.purchaseAndSaveBook as MC.
-
-        //delete the following statement when method implemented
-        return new UiFormSpecifier()
+        NumberForInstances numberForInstances = new NumberForInstances()
+        book ?= new MyLibraryBook(params)
+        UiFormSpecifier bookPurchaseSpecifier = new UiFormSpecifier()
+        bookPurchaseSpecifier.ui book, {
+            section "Purchase Number", {
+                field numberForInstances.numberOfInstances_ //<1>
+            }
+            formAction MyLibraryController.&purchaseAndSaveBook as MC
+        }
     }
 
     /**
@@ -468,17 +478,15 @@ class MyLibraryUiService implements WebAttributes {
      * **Outputs:** Returns a `UiShowSpecifier` configured to display the book's details.
      */
     UiShowSpecifier buildBookShow(MyLibraryBook book) {
-        // TODO 3.14.1: Create a new UiShowSpecifier named bookShowSpecifier.
-        // TODO 3.14.2: Define bookShowSpecifier.ui block for the given book.
-        // Inside ui block:
-        // - TODO 3.14.3: Add fieldLabeled for book.title_.
-        // - TODO 3.14.4: Add fieldLabeled for book.author_.
-        // - TODO 3.14.5: Add fieldLabeled for book.numberOfPages_.
-        // - TODO 3.14.6: Add fieldLabeled for book.description_.
-        // - TODO 3.14.7: Add fieldLabeled for book.numberOfInstances_.
+        UiShowSpecifier bookShowSpecifier = new UiShowSpecifier()
 
-        //delete the following statement when method implemented
-        return new UiShowSpecifier()
+        bookShowSpecifier.ui(book, {
+            fieldLabeled book.title_
+            fieldLabeled book.author_
+            fieldLabeled book.numberOfPages_
+            fieldLabeled book.description_
+            fieldLabeled book.numberOfInstances_
+        })
     }
 
     /**
@@ -498,16 +506,12 @@ class MyLibraryUiService implements WebAttributes {
      * **Outputs:** Returns a `UiFilterSpecifier` to filter active book instances.
      */
     UiFilterSpecifier buildIsActiveBookInstances(MyLibraryBook book) {
-        // TODO 3.16.1: Create a new instance of MyLibraryBookInstance named bookInstance.
-        // TODO 3.16.2: Create a new UiFilterSpecifier named bookInstanceFilterSpecifier.
-        // TODO 3.16.3: Define bookInstanceFilterSpecifier.sec block for MyLibraryBookInstance.
-        // Inside sec block:
-        // - TODO 3.16.4: Add filterFieldExpressionBool with FilterExpression comparing bookInstance.isActive_ to true using Operator.EQ.
-
-        //delete the following statement when method implemented
-        return new UiFilterSpecifier()
+        MyLibraryBookInstance bookInstance = new MyLibraryBookInstance()
+        UiFilterSpecifier bookInstanceFilterSpecifier = new UiFilterSpecifier()
+        bookInstanceFilterSpecifier.sec MyLibraryBookInstance, {
+            filterFieldExpressionBool new FilterExpression(true, Operator.EQ, bookInstance.isActive_)
+        }
     }
-
     /**
      * Builds a table displaying all active physical instances of a given book.
      *
@@ -533,22 +537,24 @@ class MyLibraryUiService implements WebAttributes {
      * **Outputs:** Returns a `UiTableSpecifier` configured to display and manage book instances.
      */
     UiTableSpecifier buildInstanceBookTable(MyLibraryBook book, MyLibraryBookInstance bookInstance = null) {
-        // TODO 3.17.1: Create a new UiTableSpecifier named table.
-        // TODO 3.17.2: Define table.ui block.
-        // Inside ui block:
-        // - TODO 3.17.3: Define header block.
-        //   - TODO 3.17.4: Add label for "Serial Number".
-        //   - TODO 3.17.5: Add column with label "Delete".
-        // - TODO 3.17.6: Build a TaackFilter.FilterBuilder for MyLibraryBookInstance.
-        //   - Restrict IDs to book.listOfBookInstance IDs.
-        //   - Add filter by calling buildIsActiveBookInstances(book).
-        // - TODO 3.17.7: Iterate over filter.build().
-        // Inside iterate block:
-        //   - TODO 3.17.8: Display rowField for bookInstanceIterator.serialNumber_.
-        //   - TODO 3.17.9: Add rowAction for DELETE linked to MyLibraryController.deleteBookInstances, passing instance ID and bookId.
+        UiTableSpecifier table = new UiTableSpecifier()
+        table.ui {
+            header {
+                label "Serial Number"
+                column {label "Delete"}
+            }
 
-        //delete the following statement when method implemented
-        return new UiTableSpecifier()
+            TaackFilter.FilterBuilder filter = taackFilterService.getBuilder(MyLibraryBookInstance).addRestrictedIds(book.listOfBookInstance*.id as Long[])
+            filter.addFilter(buildIsActiveBookInstances(book))
+
+            iterate(
+                    filter.build()) { MyLibraryBookInstance bookInstanceIterator ->
+                rowField bookInstanceIterator.serialNumber_
+                rowColumn {
+                    rowAction ActionIcon.DELETE * IconStyle.SCALE_DOWN, MyLibraryController.&deleteBookInstances as MC, bookInstanceIterator.id, [bookId:book.id]
+                }
+            }
+        }
     }
 }
 
