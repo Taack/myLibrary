@@ -32,8 +32,8 @@ class MyLibraryBook {
         return count
     }
 
-    // TODO 1.1.1: Implement getNumberOfBooksBorrowable() to return the count of MyLibraryBookInstance where:
-    // - isAvailableB is true
-    // - isActive is true
-    // - book equals this book instance
+    int getNumberOfBooksBorrowable() {
+        return MyLibraryBookInstance.countByIsAvailableBAndIsActiveAndBook(true, true, this)
+    }
+
 }

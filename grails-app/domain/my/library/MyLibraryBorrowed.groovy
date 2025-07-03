@@ -23,17 +23,19 @@ import taack.ast.annotation.TaackFieldEnum
  * - Constraints block (can remain empty or define validations as needed).
  */
 
-// TODO 1.3.1: Define enum ApprovalStatus with PENDING, APPROVED, REJECTED.
+enum ApprovalStatus {
+    PENDING, APPROVED, REJECTED
+}
 
 @GrailsCompileStatic
 @TaackFieldEnum
 class MyLibraryBorrowed {
-    // TODO 1.3.2: Define field bookInstance of type MyLibraryBookInstance.
-    // TODO 1.3.3: Define field user of type User.
-    // TODO 1.3.4: Define field requestDate of type Date.
-    // TODO 1.3.5: Define field approvalDate of type Date.
-    // TODO 1.3.6: Define field returnDate of type Date.
-    // TODO 1.3.7: Define field statusOfApproval of type ApprovalStatus, default PENDING.
+    MyLibraryBookInstance bookInstance
+    User user
+    Date requestDate
+    Date approvalDate
+    Date returnDate
+    ApprovalStatus statusOfApproval= ApprovalStatus.PENDING
 
-    // TODO 1.3.8: Define empty static constraints block.
+    static constraints = {}
 }

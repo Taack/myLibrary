@@ -24,17 +24,12 @@ class MyLibraryBookInstance {
     Boolean isActive = true
     Integer serialNumber = new Random().nextInt(100000)
 
-    // TODO 1.2.1: Define field borrowHistoryOfBook as List<MyLibraryBorrowed>.
-    // TODO 1.2.2: Define field isAvailableB as Boolean, default true.
+    List<MyLibraryBorrowed> borrowHistoryOfBook
+    Boolean isAvailableB = true
 
     static constraints = {}
 
     static belongsTo = [book: MyLibraryBook]
 
-    // TODO 1.2.3: Define hasMany relationship for borrowHistoryOfBook (MyLibraryBorrowed).
-
-    // TODO 1.2.4: Implement getIsAvailable() method to:
-    // - Return true if borrowHistoryOfBook is null or empty.
-    // - Return true if the last borrowHistoryOfBook entry has a non-null returnDate.
-    // - Otherwise, set isAvailableB to false and return false.
+    static hasMany = [borrowHistoryOfBook: MyLibraryBorrowed]
 }
