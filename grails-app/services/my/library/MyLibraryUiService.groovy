@@ -722,7 +722,7 @@ class MyLibraryUiService implements WebAttributes {
                 if (isCurrently) {label borrowed.statusOfApproval_}
                 label borrowed.requestDate_
                 label borrowed.approvalDate_
-                column {label "Return Book"}
+                if (isCurrently) column {label "Return Book"}
                 column {label borrowed.user_}
                 if (isCurrently) {label "Approve Book"}
             }
@@ -744,9 +744,11 @@ class MyLibraryUiService implements WebAttributes {
                 if(isCurrently) {rowField borrowedIterator.statusOfApproval_}
                 rowField borrowedIterator.requestDate_
                 rowField borrowedIterator.approvalDate_
-                rowColumn {
-                    if(isCurrently && (borrowedIterator.statusOfApproval == ApprovalStatus.APPROVED)) {
-                        rowAction ActionIcon.DELETE * IconStyle.SCALE_DOWN, MyLibraryController.&returnBook as MC, borrowedIterator.id
+                if (isCurrently) {
+                    rowColumn {
+                        if (borrowedIterator.statusOfApproval == ApprovalStatus.APPROVED) {
+                            rowAction ActionIcon.DELETE * IconStyle.SCALE_DOWN, MyLibraryController.&returnBook as MC, borrowedIterator.id
+                        }
                     }
                 }
                 rowColumn {rowField borrowedIterator.user.username_}
