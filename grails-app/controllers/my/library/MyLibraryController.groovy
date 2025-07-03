@@ -620,12 +620,12 @@ class MyLibraryController implements WebAttributes {
      * **Outputs:** Renders the borrow records table with a filter bar for past borrowings.
      */
     def listBooksBorrowed() {
-        // TODO 4.1.1: Build tableUserBorrowsSpecifier by calling myLibraryUiService.buildUserBorrowsTable().
-        // TODO 4.1.2: Build filterUserBorrowsSpecifier by calling myLibraryUiService.buildUserBorrowsFilter().
-        // TODO 4.1.3: Use taackUiService.show to render a UiBlockSpecifier.
-        // Inside show block:
-        // - TODO 4.1.4: Add tableFilter combining filterUserBorrowsSpecifier and tableUserBorrowsSpecifier.
-        // TODO 4.1.5: Include the general menu by calling myLibraryUiService.buildMenu().
+        UiTableSpecifier tableUserBorrowsSpecifier = myLibraryUiService.buildUserBorrowsTable()
+        UiFilterSpecifier filterUserBorrowsSpecifier = myLibraryUiService.buildUserBorrowsFilter()
+
+        taackUiService.show(new UiBlockSpecifier().ui {
+            tableFilter filterUserBorrowsSpecifier, tableUserBorrowsSpecifier
+        }, myLibraryUiService.buildMenu())
     }
 
 
