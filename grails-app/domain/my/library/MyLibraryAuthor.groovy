@@ -24,12 +24,12 @@ class MyLibraryAuthor {
     String firstName
     String lastName
     Date dateOfBirth
-    List<MyLibraryBook> listOfBooks //(1)
-    Boolean isActive = true //(2)
+    List<MyLibraryBook> listOfBooks
+    Boolean isActive = true
 
     static constraints = {}
 
-    static hasMany = [listOfBooks: MyLibraryBook] //(3)
+    static hasMany = [listOfBooks: MyLibraryBook]
 
     String toString() {
         return firstName + ' ' + lastName

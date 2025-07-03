@@ -71,6 +71,12 @@ class MyLibraryUiService implements WebAttributes {
         TaackAppRegisterService.register(new TaackApp(MyLibraryController.&index as MC, new String(this.class.getResourceAsStream("/myLibrary/library-svgrepo-com.svg").readAllBytes())))
     }
 
+    //ADDED method
+    boolean isAdmin() {
+        User currentUser = springSecurityService.currentUser as User
+        return currentUser?.authorities?.any { it.authority == 'ROLE_ADMIN' }
+    }
+
     /*------------------------------------------------------------*/
     /* General Menu                                               */
     /*------------------------------------------------------------*/
@@ -95,9 +101,12 @@ class MyLibraryUiService implements WebAttributes {
         m.ui {
             menu MyLibraryController.&listBook as MC
             menu MyLibraryController.&index as MC
-
             menu MyLibraryController.&listBooksBorrowed as MC
             menu MyLibraryController.&listBooksCurrentlyBorrowed as MC
+
+            //ADDED menus
+            menu MyLibraryController.&listOfUsers as MC
+            menu MyLibraryController.&listOfRequests as MC
         }
     }
 
@@ -200,6 +209,9 @@ class MyLibraryUiService implements WebAttributes {
      * - Remember to cast controller method references with `as MC` when used as closures in actions.
      */
     UiTableSpecifier buildAuthorTable(Boolean isSelect = false) {
+        //ADDED line
+        boolean isAdmin = isAdmin()
+
         MyLibraryAuthor author = new MyLibraryAuthor()
         UiTableSpecifier authorTableSpecifier = new UiTableSpecifier()
 
@@ -207,7 +219,7 @@ class MyLibraryUiService implements WebAttributes {
             header {
                 column {label author.firstName_}
                 label author.lastName_
-                if(!isSelect) {
+                if(!isSelect && isAdmin) { //ADDED && isAdmin
                     label author.isActive_
                     label "Delete Author"
                 }
@@ -217,19 +229,18 @@ class MyLibraryUiService implements WebAttributes {
                     .setMaxNumberOfLine(10)
                     .setSortOrder(TaackFilter.Order.ASC, author.lastName_)
 
-            if(isSelect) {
-                filter.addFilter(buildIsActiveAuthorFilter(author))
-            }
+            //ADDED if statement
+            if(!isAdmin) {filter.addFilter(buildIsActiveAuthorFilter(author))}
+
+            if(isSelect) {filter.addFilter(buildIsActiveAuthorFilter(author))}
             iterate(
                     filter.build()) { MyLibraryAuthor authorIterator ->
                 rowColumn {
                     rowAction authorIterator.firstName, MyLibraryController.&showAuthor as MC, authorIterator.id
-                    if (isSelect) {
-                        rowAction tr('default.role.label'), ActionIcon.SELECT * IconStyle.SCALE_DOWN, authorIterator.id, authorIterator.toString()
-                    }
+                    if (isSelect) {rowAction tr('default.role.label'), ActionIcon.SELECT * IconStyle.SCALE_DOWN, authorIterator.id, authorIterator.toString()}
                 }
                 rowField authorIterator.lastName_
-                if(!isSelect) {
+                if(!isSelect && isAdmin) { //ADDED && isAdmin
                     rowField authorIterator.isActive_
                     rowColumn {
                         rowAction ActionIcon.DELETE * IconStyle.SCALE_DOWN, MyLibraryController.&deleteAuthor as MC, authorIterator.id
@@ -349,6 +360,9 @@ class MyLibraryUiService implements WebAttributes {
      * **Outputs:** Returns a `UiTableSpecifier` rendering the book table with appropriate columns and actions.
      */
     UiTableSpecifier buildBookTable(MyLibraryAuthor author = null) {
+        //ADDED line
+        boolean isAdmin = isAdmin()
+
         MyLibraryBook book = new MyLibraryBook()
         UiTableSpecifier bookTableSpecifier = new UiTableSpecifier()
         bookTableSpecifier.ui {
@@ -375,15 +389,18 @@ class MyLibraryUiService implements WebAttributes {
                     rowField bookIterator.title_
                 }
                 if (!author) {rowField bookIterator.author_}
-                rowColumn {rowField bookIterator.numberOfInstances_}
+                if (isAdmin) {rowColumn {rowField bookIterator.numberOfInstances_}} //ADDED if
                 if (!author) {
                     rowField bookIterator.numberOfBooksBorrowable_
-                    rowColumn {
-                        rowAction ActionIcon.DELETE * IconStyle.SCALE_DOWN, MyLibraryController.&selectBookInstance as MC, bookIterator.id
-                        rowAction ActionIcon.ADD * IconStyle.SCALE_DOWN, MyLibraryController.&purchaseBook as MC, bookIterator.id
-                    }
-                    rowColumn {
-                        rowAction ActionIcon.CREATE * IconStyle.SCALE_DOWN, MyLibraryController.&requestBookInstance as MC, bookIterator.id
+                    if(isAdmin) { //ADDED the if not the content
+                        rowColumn {
+                            rowAction ActionIcon.DELETE * IconStyle.SCALE_DOWN, MyLibraryController.&selectBookInstance as MC, bookIterator.id
+                            rowAction ActionIcon.ADD * IconStyle.SCALE_DOWN, MyLibraryController.&purchaseBook as MC, bookIterator.id
+                        }
+                    } else { // ADDED the else not the content
+                        rowColumn {
+                            rowAction ActionIcon.CREATE * IconStyle.SCALE_DOWN, MyLibraryController.&requestBookInstance as MC, bookIterator.id
+                        }
                     }
                 }
             }
@@ -574,11 +591,8 @@ class MyLibraryUiService implements WebAttributes {
             header {
                 label "Serial Number"
                 column {
-                    if (isOne) {
-                        label "Select Book Instance"
-                    } else {
-                        label "Delete"
-                    }
+                    if (isOne) {label "Select Book Instance"}
+                    else {label "Delete"}
                 }
             }
 
@@ -657,7 +671,7 @@ class MyLibraryUiService implements WebAttributes {
 
         requestBookFormSpecifier.ui borrowed, {
             section "Request Book Form", {
-                hiddenField borrowed.user_ //<1>
+                hiddenField borrowed.user_
                 field borrowed.requestDate_
                 ajaxField borrowed.bookInstance_, MyLibraryController.&selectBookInstanceOne as MC, book.id
             }
@@ -709,7 +723,10 @@ class MyLibraryUiService implements WebAttributes {
      *
      * **Outputs:** Returns a `UiTableSpecifier` rendering the borrow records table with appropriate columns and actions.
      */
-    UiTableSpecifier buildUserBorrowsTable(isCurrently = false) {
+    UiTableSpecifier buildUserBorrowsTable(isCurrently = false, User showUser = null, isUser = false) { // ADDED the 2 variables
+        // ADDED the line
+        Boolean isAdmin = isAdmin()
+
         MyLibraryBook book = new MyLibraryBook()
         MyLibraryBorrowed borrowed = new MyLibraryBorrowed()
         UiTableSpecifier buildUserBorrowsSpecifier = new UiTableSpecifier()
@@ -722,17 +739,32 @@ class MyLibraryUiService implements WebAttributes {
                 if (isCurrently) {label borrowed.statusOfApproval_}
                 label borrowed.requestDate_
                 label borrowed.approvalDate_
-                if (isCurrently) column {label "Return Book"}
-                column {label borrowed.user_}
-                if (isCurrently) {label "Approve Book"}
+                if (isCurrently  && !isAdmin) column {label "Return Book"} // ADDED && !isAdmin
+                if(isAdmin) { // ADDED if isAdmin
+                    column { label borrowed.user_ }
+                    if (!showUser) { // ADDED replaced isCurrently with !showUser
+                        label "Approve Book"
+                    }
+                }
+            }
+
+            // ADDED block
+            User currentUser = springSecurityService.currentUser as User
+            if (showUser) {
+                currentUser = showUser
             }
 
             TaackFilter.FilterBuilder filter = taackFilterService.getBuilder(MyLibraryBorrowed)
                     .setMaxNumberOfLine(10)
                     .setSortOrder(TaackFilter.Order.ASC, borrowed.bookInstance_,bookInstance.book_,book.title_)
 
-            if(isCurrently) {filter.addFilter(new FilterExpression(null, Operator.EQ, borrowed.returnDate_))} //<1>
-            else {filter.addFilter(new FilterExpression(null, Operator.NE, borrowed.returnDate_))} //<1>
+            // ADDED if
+            if(!isUser || showUser) {
+                filter.addFilter(new FilterExpression(currentUser, Operator.EQ, borrowed.user_))
+            }
+
+            if(isCurrently) {filter.addFilter(new FilterExpression(null, Operator.EQ, borrowed.returnDate_))}
+            else {filter.addFilter(new FilterExpression(null, Operator.NE, borrowed.returnDate_))}
 
             iterate(
                     filter.build()) { MyLibraryBorrowed borrowedIterator ->
@@ -744,17 +776,19 @@ class MyLibraryUiService implements WebAttributes {
                 if(isCurrently) {rowField borrowedIterator.statusOfApproval_}
                 rowField borrowedIterator.requestDate_
                 rowField borrowedIterator.approvalDate_
-                if (isCurrently) {
+                if (isCurrently && !isAdmin) { //ADDED && !isAdmin
                     rowColumn {
                         if (borrowedIterator.statusOfApproval == ApprovalStatus.APPROVED) {
                             rowAction ActionIcon.DELETE * IconStyle.SCALE_DOWN, MyLibraryController.&returnBook as MC, borrowedIterator.id
                         }
                     }
                 }
-                rowColumn {rowField borrowedIterator.user.username_}
-                if (isCurrently) {
-                    rowColumn {
-                        rowAction ActionIcon.DELETE * IconStyle.SCALE_DOWN, MyLibraryController.&approveBook as MC, borrowedIterator.id
+                if(isAdmin) { // ADDED if  isAdmin
+                    rowColumn { rowField borrowedIterator.user.username_ }
+                    if (!showUser) { // ADDED replace isCurrenlty by !showUser
+                        rowColumn {
+                            rowAction ActionIcon.DELETE * IconStyle.SCALE_DOWN, MyLibraryController.&approveBook as MC, borrowedIterator.id
+                        }
                     }
                 }
             }
@@ -893,6 +927,34 @@ class MyLibraryUiService implements WebAttributes {
     }
 
 
+    /*------------------------------------------------------------*/
+    /* Users Menu                                                 */
+    /*------------------------------------------------------------*/
+
+    UiTableSpecifier buildUsersTable() {
+        MyLibraryBorrowed borrowed = new MyLibraryBorrowed()
+        UiTableSpecifier buildUsersSpecifier = new UiTableSpecifier()
+        User user = new User()
+
+        buildUsersSpecifier.ui {
+            header {
+                label user.username_
+                label "Authorities"
+            }
+
+            TaackFilter taackFilter = taackFilterService.getBuilder(User)
+                    .setSortOrder(TaackFilter.Order.ASC, user.username_)
+                    .setMaxNumberOfLine(10).build()
+
+            iterate taackFilter, {User userIterator ->
+                rowColumn {
+                    rowAction ActionIcon.SHOW * IconStyle.SCALE_DOWN, MyLibraryController.&showUser as MC, userIterator.id
+                    rowField userIterator.username_
+                }
+                rowField userIterator.authorities_
+            }
+        }
+    }
 
 }
 

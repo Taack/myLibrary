@@ -30,6 +30,5 @@ class MyLibraryBookInstance {
     static constraints = {}
 
     static belongsTo = [book: MyLibraryBook]
-
     static hasMany = [borrowHistoryOfBook: MyLibraryBorrowed]
 }

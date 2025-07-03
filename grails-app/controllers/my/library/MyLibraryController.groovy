@@ -31,12 +31,17 @@ import taack.ui.dsl.common.ActionIcon
  * return types) and many are annotated with {@code @Transactional} to make sure
  * database changes are committed or rolled back atomically.
  */
-@Secured(['ROLE_ADMIN'])
+@Secured(['ROLE_ADMIN','ROLE_BORROWER'])
 @GrailsCompileStatic
 class MyLibraryController implements WebAttributes {
     TaackUiService taackUiService
     MyLibraryUiService myLibraryUiService
     TaackSaveService taackSaveService
+
+    // ADDED elements
+    SpringSecurityService springSecurityService
+    User currentUser
+    boolean isAdmin = false
 
     /*------------------------------------------------------------*/
     /* General actions                                            */
@@ -47,6 +52,10 @@ class MyLibraryController implements WebAttributes {
      * our default screen that lists all authors.
      */
     def index() {
+        // ADDED elements
+        currentUser = springSecurityService.currentUser as User
+        isAdmin = currentUser?.authorities?.any { it.authority == 'ROLE_ADMIN' }
+
         redirect action: 'listAuthor'
     }
 
@@ -711,5 +720,49 @@ class MyLibraryController implements WebAttributes {
         taackSaveService.redirectOrRenderErrors(borrowed)
     }
 
+    // ADDED method
+    def listOfRequests() {
+        UiTableSpecifier tableUserBorrowsSpecifier = myLibraryUiService.buildUserBorrowsTable(true, null, true)
+        UiFilterSpecifier filterUserBorrowsSpecifier = myLibraryUiService.buildUserBorrowsFilter()
 
+        taackUiService.show(new UiBlockSpecifier().ui {
+            tableFilter filterUserBorrowsSpecifier, tableUserBorrowsSpecifier
+        }, myLibraryUiService.buildMenu())
+    }
+
+    /*------------------------------------------------------------*/
+    /* Users menu                                              */
+    /*------------------------------------------------------------*/
+
+    def listOfUsers() {
+        UiTableSpecifier tableUsersSpecifier = myLibraryUiService.buildUsersTable()
+
+        taackUiService.show(new UiBlockSpecifier().ui {
+            table tableUsersSpecifier
+        }, myLibraryUiService.buildMenu())
+    }
+
+    def showUser(User user) {
+        UiShowSpecifier showSpec = new UiShowSpecifier()
+
+        showSpec.ui(user, {
+            fieldLabeled user.username_
+            fieldLabeled user.firstName_
+            fieldLabeled user.lastName_
+            fieldLabeled user.authorities_ //change
+        })
+
+        UiTableSpecifier userBorrowsSpecifier = myLibraryUiService.buildUserBorrowsTable(false, user)
+        UiFilterSpecifier userBorrowsFilterSpecifier = myLibraryUiService.buildUserBorrowsFilter()
+        UiTableSpecifier userBorrowsCurrentlySpecifier = myLibraryUiService.buildUserBorrowsTable(true, user)
+
+        taackUiService.show(new UiBlockSpecifier().ui {
+            modal {
+                show showSpec
+                tableFilter userBorrowsFilterSpecifier, userBorrowsSpecifier
+                tableFilter userBorrowsFilterSpecifier, userBorrowsCurrentlySpecifier
+            }
+        })
+
+    }
 }

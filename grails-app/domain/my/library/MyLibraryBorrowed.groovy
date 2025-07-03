@@ -37,8 +37,25 @@ class MyLibraryBorrowed {
     Date returnDate
     ApprovalStatus statusOfApproval= ApprovalStatus.PENDING
 
+
+    //ADDED new constrains
+//    static constraints = {
+//        approvalDate nullable: true
+//        returnDate nullable: true
+//    }
     static constraints = {
-        approvalDate nullable: true
-        returnDate nullable: true
+        approvalDate nullable: true, validator: { Date val, MyLibraryBorrowed obj ->
+            if (val == null) return true
+            return val >= obj.requestDate
+        }
+
+        returnDate nullable: true, validator: { Date val, MyLibraryBorrowed obj ->
+            if (val == null) return true
+            return val >= obj.approvalDate
+        }
+
+        bookInstance nullable:false
+        user nullable:false
+
     }
 }
