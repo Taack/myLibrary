@@ -466,11 +466,13 @@ class MyLibraryController implements WebAttributes {
      * **Outputs:** Displays the modal request form to the user.
      */
     def requestBookInstance(MyLibraryBook book){
-        // TODO 3.5.1: Build requestBookInstanceForm by calling myLibraryUiService.buildRequestBookForm(book).
-        // TODO 3.5.2: Use taackUiService.show to render a UiBlockSpecifier.
-        // Inside show block:
-        // - TODO 3.5.3: Define a modal block.
-        //   - TODO 3.5.4: Add form using requestBookInstanceForm.
+        UiFormSpecifier requestBookInstanceForm = myLibraryUiService.buildRequestBookForm(book)
+
+        taackUiService.show new UiBlockSpecifier().ui {
+            modal {
+                form requestBookInstanceForm
+            }
+        }
     }
 
 
@@ -489,11 +491,13 @@ class MyLibraryController implements WebAttributes {
      * **Outputs:** Displays a modal with a selectable table of book instances.
      */
     def selectBookInstanceOne(MyLibraryBook book) {
-        // TODO 3.9.1: Build bookInstanceTable by calling myLibraryUiService.buildInstanceBookTable(book, true).
-        // TODO 3.9.2: Use taackUiService.show to render a UiBlockSpecifier.
-        // Inside show block:
-        // - TODO 3.9.3: Define a modal block.
-        //   - TODO 3.9.4: Add table using bookInstanceTable.
+        UiTableSpecifier bookInstanceTable = myLibraryUiService.buildInstanceBookTable(book, true)
+
+        taackUiService.show new UiBlockSpecifier().ui {
+            modal {
+                table bookInstanceTable
+            }
+        }
     }
 
 
@@ -514,9 +518,9 @@ class MyLibraryController implements WebAttributes {
      */
     @Transactional
     def saveBookForm() {
-        // TODO 3.6.1: Save MyLibraryBorrowed object using taackSaveService.save and store it in borrowed.
-        // TODO 3.6.2: If borrowed.bookInstance is not null, set its isAvailableB property to false.
-        // TODO 3.6.3: Call taackSaveService.redirectOrRenderErrors with borrowed.
+        MyLibraryBorrowed borrowed = taackSaveService.save(MyLibraryBorrowed)
+        borrowed.bookInstance?.isAvailableB = false
+        taackSaveService.redirectOrRenderErrors(borrowed)
     }
 
 
@@ -541,12 +545,12 @@ class MyLibraryController implements WebAttributes {
      * **Outputs:** Renders the current borrowings table with a filter bar.
      */
     def listBooksCurrentlyBorrowed() {
-        // TODO 3.3.1: Build tableUserBorrowsSpecifier by calling myLibraryUiService.buildUserBorrowsTable(true).
-        // TODO 3.3.2: Build filterUserBorrowsSpecifier by calling myLibraryUiService.buildUserBorrowsFilter().
-        // TODO 3.3.3: Use taackUiService.show to render a UiBlockSpecifier.
-        // Inside show block:
-        // - TODO 3.3.4: Add tableFilter combining filterUserBorrowsSpecifier and tableUserBorrowsSpecifier.
-        // TODO 3.3.5: Include the general menu by calling myLibraryUiService.buildMenu().
+        UiTableSpecifier tableUserBorrowsSpecifier = myLibraryUiService.buildUserBorrowsTable(true)
+        UiFilterSpecifier filterUserBorrowsSpecifier = myLibraryUiService.buildUserBorrowsFilter()
+
+        taackUiService.show(new UiBlockSpecifier().ui {
+            tableFilter filterUserBorrowsSpecifier, tableUserBorrowsSpecifier
+        }, myLibraryUiService.buildMenu())
     }
 
     /**
@@ -564,11 +568,13 @@ class MyLibraryController implements WebAttributes {
      * **Outputs:** Displays the modal return form to the user.
      */
     def returnBook(MyLibraryBorrowed borrowed) {
-        // TODO 3.15.1: Build requestReturnBookInstanceForm by calling myLibraryUiService.buildRequestReturnBookForm(borrowed).
-        // TODO 3.15.2: Use taackUiService.show to render a UiBlockSpecifier.
-        // Inside show block:
-        // - TODO 3.15.3: Define a modal block.
-        //   - TODO 3.15.4: Add form using requestReturnBookInstanceForm.
+        UiFormSpecifier requestReturnBookInstanceForm = myLibraryUiService.buildRequestReturnBookForm(borrowed)
+
+        taackUiService.show new UiBlockSpecifier().ui {
+            modal {
+                form requestReturnBookInstanceForm
+            }
+        }
     }
 
     /**
@@ -587,9 +593,9 @@ class MyLibraryController implements WebAttributes {
      */
     @Transactional
     def saveReturnBookForm() {
-        // TODO 3.17.1: Save MyLibraryBorrowed object using taackSaveService.save and store it in borrowed.
-        // TODO 3.17.2: If borrowed.bookInstance is not null, set its isAvailableB property to true.
-        // TODO 3.17.3: Call taackSaveService.redirectOrRenderErrors with borrowed.
+        MyLibraryBorrowed borrowed = taackSaveService.save(MyLibraryBorrowed)
+        borrowed.bookInstance?.isAvailableB = true
+        taackSaveService.redirectOrRenderErrors(borrowed)
     }
 
 
@@ -638,11 +644,13 @@ class MyLibraryController implements WebAttributes {
      * **Outputs:** Displays the modal showing the borrow record's details.
      */
     def showBorrowed(MyLibraryBorrowed borrowed) {
-        // TODO 3.20.1: Build showSpec by calling myLibraryUiService.buildBorrowedShow(borrowed).
-        // TODO 3.20.2: Use taackUiService.show to render a UiBlockSpecifier.
-        // Inside show block:
-        // - TODO 3.20.3: Define a modal block.
-        //   - TODO 3.20.4: Add show using showSpec.
+        UiShowSpecifier showSpec = myLibraryUiService.buildBorrowedShow(borrowed)
+
+        taackUiService.show(new UiBlockSpecifier().ui {
+            modal {
+                show showSpec
+            }
+        })
     }
 
 
@@ -665,11 +673,13 @@ class MyLibraryController implements WebAttributes {
      * **Outputs:** Displays the modal approval form to the user.
      */
     def approveBook(MyLibraryBorrowed borrowed) {
-        // TODO 3.14.1: Build approveBookSpecifier by calling myLibraryUiService.buildApproveBookTable(borrowed).
-        // TODO 3.14.2: Use taackUiService.show to render a UiBlockSpecifier.
-        // Inside show block:
-        // - TODO 3.14.3: Define a modal block.
-        //   - TODO 3.14.4: Add form using approveBookSpecifier.
+        UiFormSpecifier approveBookSpecifier = myLibraryUiService.buildApproveBookTable(borrowed)
+
+        taackUiService.show(new UiBlockSpecifier().ui {
+            modal {
+                form approveBookSpecifier
+            }
+        })
     }
 
 
@@ -691,10 +701,14 @@ class MyLibraryController implements WebAttributes {
      */
     @Transactional
     def saveApprovalBookForm() {
-        // TODO 3.16.1: Create a Calendar instance and set its date to December 31, year 999999 as a placeholder.
-        // TODO 3.16.2: Save MyLibraryBorrowed object using taackSaveService.save and store it in borrowed.
-        // TODO 3.16.3: If borrowed.statusOfApproval equals ApprovalStatus.REJECTED, set borrowed.returnDate to the placeholder date.
-        // TODO 3.16.4: Call taackSaveService.redirectOrRenderErrors with borrowed.
+        Calendar cal = Calendar.getInstance()
+        cal.set(999999, Calendar.DECEMBER, 31)
+        Date date = cal.time
+        MyLibraryBorrowed borrowed = taackSaveService.save(MyLibraryBorrowed)
+        if(borrowed.statusOfApproval == ApprovalStatus.REJECTED) {
+            borrowed.returnDate = date
+        }
+        taackSaveService.redirectOrRenderErrors(borrowed)
     }
 
 

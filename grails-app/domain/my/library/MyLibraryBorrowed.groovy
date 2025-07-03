@@ -37,5 +37,8 @@ class MyLibraryBorrowed {
     Date returnDate
     ApprovalStatus statusOfApproval= ApprovalStatus.PENDING
 
-    static constraints = {}
+    static constraints = {
+        approvalDate nullable: true
+        returnDate nullable: true
+    }
 }
