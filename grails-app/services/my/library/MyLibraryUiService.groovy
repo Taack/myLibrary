@@ -96,8 +96,8 @@ class MyLibraryUiService implements WebAttributes {
             menu MyLibraryController.&listBook as MC
             menu MyLibraryController.&index as MC
 
-            // TODO 2: Add menu item linking to MyLibraryController.listBooksBorrowed.
-            // TODO 2: Add menu item linking to MyLibraryController.listBooksCurrentlyBorrowed.
+            menu MyLibraryController.&listBooksBorrowed as MC
+            menu MyLibraryController.&listBooksCurrentlyBorrowed as MC
         }
     }
 
