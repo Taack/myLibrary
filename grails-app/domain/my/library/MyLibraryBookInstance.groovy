@@ -32,9 +32,4 @@ class MyLibraryBookInstance {
     static belongsTo = [book: MyLibraryBook]
 
     // TODO 1.2.3: Define hasMany relationship for borrowHistoryOfBook (MyLibraryBorrowed).
-
-    // TODO 1.2.4: Implement getIsAvailable() method to:
-    // - Return true if borrowHistoryOfBook is null or empty.
-    // - Return true if the last borrowHistoryOfBook entry has a non-null returnDate.
-    // - Otherwise, set isAvailableB to false and return false.
 }

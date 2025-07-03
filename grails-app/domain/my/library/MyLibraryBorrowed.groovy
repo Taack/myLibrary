@@ -35,5 +35,7 @@ class MyLibraryBorrowed {
     // TODO 1.3.6: Define field returnDate of type Date.
     // TODO 1.3.7: Define field statusOfApproval of type ApprovalStatus, default PENDING.
 
-    // TODO 1.3.8: Define empty static constraints block.
+    // TODO 1.3.8: Define static constraints block.
+    // TODO 1.3.9: In the constraints block, set approvalDate to be nullable.
+    // TODO 1.3.10: In the constraints block, set returnDate to be nullable.
 }
