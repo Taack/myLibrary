@@ -164,7 +164,6 @@ class MyLibrarySecurityService {
                 MyLibraryController.&approveBook as MethodClosure)
 
         TaackAppRegisterService.register(new TaackApp(MyLibraryController.&index as MethodClosure, new String(this.class.getResourceAsStream("/myLibrary/library-svgrepo-com.svg").readAllBytes())))
-
     }
 
 
