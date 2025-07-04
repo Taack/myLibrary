@@ -85,11 +85,8 @@ class MyLibraryUiService implements WebAttributes {
      * **Outputs:** Returns a boolean indicating if the user is an admin.
      */
     boolean isAdmin() {
-        // TODO 3.1.1: Retrieve currentUser from springSecurityService.currentUser and cast to User.
-        // TODO 3.1.2: Return true if currentUser.authorities contains 'ROLE_ADMIN'; else return false.
-
-        // remove the following line after implementation
-        return true
+        User currentUser = springSecurityService.currentUser as User
+        return currentUser?.authorities?.any { it.authority == 'ROLE_ADMIN' }
     }
 
     /*------------------------------------------------------------*/
