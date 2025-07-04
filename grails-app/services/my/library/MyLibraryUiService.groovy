@@ -386,6 +386,10 @@ class MyLibraryUiService implements WebAttributes {
                     .setMaxNumberOfLine(10)
                     .setSortOrder(TaackFilter.Order.ASC, book.title_)
 
+            if(!isAdmin) {
+                MyLibraryBookInstance bookInstance = new MyLibraryBookInstance()
+                filter.addFilter(new FilterExpression(true, Operator.EQ, book.listOfBookInstance_,bookInstance.isAvailableB_))
+            }
 
             if(author) {filter.addRestrictedIds(author.listOfBooks*.id as Long[])}
             iterate(
