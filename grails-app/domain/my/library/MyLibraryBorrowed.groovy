@@ -40,9 +40,17 @@ class MyLibraryBorrowed {
     ApprovalStatus statusOfApproval = ApprovalStatus.PENDING
 
     static constraints = {
-        // TODO 1.1: Add validation so approvalDate is nullable and, if provided, must be after or equal to requestDate.
-        // TODO 1.2: Add validation so returnDate is nullable and, if provided, must be after or equal to approvalDate.
-        // TODO 1.3: Ensure bookInstance is not nullable.
-        // TODO 1.4: Ensure user is not nullable.
+        approvalDate nullable: true, validator: { Date val, MyLibraryBorrowed obj ->
+            if (val == null) return true
+            return val >= obj.requestDate
+        }
+
+        returnDate nullable: true, validator: { Date val, MyLibraryBorrowed obj ->
+            if (val == null) return true
+            return val >= obj.approvalDate
+        }
+
+        bookInstance nullable:false
+        user nullable:false
     }
 }
