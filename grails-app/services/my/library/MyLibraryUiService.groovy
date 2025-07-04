@@ -120,9 +120,8 @@ class MyLibraryUiService implements WebAttributes {
             menu MyLibraryController.&index as MC
             menu MyLibraryController.&listBooksBorrowed as MC
             menu MyLibraryController.&listBooksCurrentlyBorrowed as MC
-
-            // TODO 2.1: Add menu entry for MyLibraryController.listOfUsers.
-            // TODO 2.2: Add menu entry for MyLibraryController.listOfRequests.
+            menu MyLibraryController.&listOfUsers as MC
+            menu MyLibraryController.&listOfRequests as MC
         }
     }
 
