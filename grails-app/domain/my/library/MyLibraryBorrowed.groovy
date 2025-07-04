@@ -6,23 +6,25 @@ import grails.plugin.springsecurity.SpringSecurityService
 import taack.ast.annotation.TaackFieldEnum
 
 /**
- * Domain class representing a *Borrowing record* in the library system.
+ * Represents a borrow record for a book instance in the library system.
  *
- * **Purpose:** Stores borrowing details, including user, book instance, dates, and approval status.
+ * **Purpose:** Stores all information related to the borrowing of a specific book instance by a user, including approval status and dates.
  *
- * **To implement (TODO 1.3):**
- * - Enum:
- *   - ApprovalStatus with values: PENDING, APPROVED, REJECTED.
- * - Fields:
- *   - bookInstance (MyLibraryBookInstance): the borrowed book instance.
- *   - user (User): the user who borrowed the book.
- *   - requestDate (Date): date when borrowing was requested.
- *   - approvalDate (Date): date when borrowing was approved.
- *   - returnDate (Date): date when the book was returned.
- *   - statusOfApproval (ApprovalStatus): approval status, default PENDING.
- * - Constraints block (can remain empty or define validations as needed).
+ * **Fields:**
+ * - `bookInstance` (MyLibraryBookInstance): The specific physical copy of the book being borrowed.
+ * - `user` (User): The user who requested and/or borrowed the book.
+ * - `requestDate` (Date): The date when the borrow request was made.
+ * - `approvalDate` (Date): The date when the borrow request was approved.
+ * - `returnDate` (Date): The date when the book was returned.
+ * - `statusOfApproval` (ApprovalStatus, default = PENDING): The approval status of the borrow request (PENDING, APPROVED, or REJECTED).
+ *
+ * **Relationships:**
+ * - Uses the `ApprovalStatus` enum to define possible approval states.
+ *
+ * **Constraints:**
+ * - approvalDate and returnDate validations ensure chronological consistency.
+ * - bookInstance and user cannot be null.
  */
-
 enum ApprovalStatus {
     PENDING, APPROVED, REJECTED
 }
@@ -35,27 +37,12 @@ class MyLibraryBorrowed {
     Date requestDate
     Date approvalDate
     Date returnDate
-    ApprovalStatus statusOfApproval= ApprovalStatus.PENDING
+    ApprovalStatus statusOfApproval = ApprovalStatus.PENDING
 
-
-    //ADDED new constrains
-//    static constraints = {
-//        approvalDate nullable: true
-//        returnDate nullable: true
-//    }
     static constraints = {
-        approvalDate nullable: true, validator: { Date val, MyLibraryBorrowed obj ->
-            if (val == null) return true
-            return val >= obj.requestDate
-        }
-
-        returnDate nullable: true, validator: { Date val, MyLibraryBorrowed obj ->
-            if (val == null) return true
-            return val >= obj.approvalDate
-        }
-
-        bookInstance nullable:false
-        user nullable:false
-
+        // TODO 1.1: Add validation so approvalDate is nullable and, if provided, must be after or equal to requestDate.
+        // TODO 1.2: Add validation so returnDate is nullable and, if provided, must be after or equal to approvalDate.
+        // TODO 1.3: Ensure bookInstance is not nullable.
+        // TODO 1.4: Ensure user is not nullable.
     }
 }

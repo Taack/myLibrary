@@ -71,10 +71,25 @@ class MyLibraryUiService implements WebAttributes {
         TaackAppRegisterService.register(new TaackApp(MyLibraryController.&index as MC, new String(this.class.getResourceAsStream("/myLibrary/library-svgrepo-com.svg").readAllBytes())))
     }
 
-    //ADDED method
+    /**
+     * Checks if the current user has the ROLE_ADMIN authority.
+     *
+     * **Purpose:** Determines whether the currently logged-in user has administrative privileges within the system.
+     *
+     * **How it works (to implement):**
+     * - Retrieves the current user from `springSecurityService.currentUser` and casts it to `User`.
+     * - Returns true if the user's authorities include `ROLE_ADMIN`; otherwise, returns false.
+     *
+     * **Inputs:** None directly; relies on the authenticated current user.
+     *
+     * **Outputs:** Returns a boolean indicating if the user is an admin.
+     */
     boolean isAdmin() {
-        User currentUser = springSecurityService.currentUser as User
-        return currentUser?.authorities?.any { it.authority == 'ROLE_ADMIN' }
+        // TODO 3.1.1: Retrieve currentUser from springSecurityService.currentUser and cast to User.
+        // TODO 3.1.2: Return true if currentUser.authorities contains 'ROLE_ADMIN'; else return false.
+
+        // remove the following line after implementation
+        return true
     }
 
     /*------------------------------------------------------------*/
@@ -89,6 +104,8 @@ class MyLibraryUiService implements WebAttributes {
      * - Accessing the home/index page.
      * - Viewing the list of borrowed books.
      * - Viewing the list of currently borrowed books.
+     * - Managing users.
+     * - Viewing borrow requests.
      *
      * **How it works:**
      * - Creates a new `UiMenuSpecifier`.
@@ -104,9 +121,8 @@ class MyLibraryUiService implements WebAttributes {
             menu MyLibraryController.&listBooksBorrowed as MC
             menu MyLibraryController.&listBooksCurrentlyBorrowed as MC
 
-            //ADDED menus
-            menu MyLibraryController.&listOfUsers as MC
-            menu MyLibraryController.&listOfRequests as MC
+            // TODO 2.1: Add menu entry for MyLibraryController.listOfUsers.
+            // TODO 2.2: Add menu entry for MyLibraryController.listOfRequests.
         }
     }
 
@@ -174,28 +190,30 @@ class MyLibraryUiService implements WebAttributes {
     }
 
     /**
-     * Builds a table displaying authors with their first name, last name, active status (if not in select mode),
+     * Builds a table displaying authors with their first name, last name, active status (if not in select mode and if user is admin),
      * and action buttons to view, select, delete, or activate authors.
      *
-     * **Purpose:** Generates the author listing table for both normal viewing and selection modals.
+     * **Purpose:** Generates the author listing table for both normal viewing and selection modals, with additional management options available to admins.
      *
      * **How it works (to implement):**
+     * - Determine if the current user is an admin by calling `isAdmin()`.
      * - Create a new instance of `MyLibraryAuthor` to access its fields.
      * - Create a new `UiTableSpecifier` to define the table structure.
      * - In the table header:
      *   - Add a column for first name using `label author.firstName_`.
      *   - Add a column for last name using `label author.lastName_`.
-     *   - If `isSelect` is false, add columns for `isActive_` and "Delete Author" actions.
+     *   - If `isSelect` is false and the user is an admin, add columns for `isActive_` and "Delete Author" actions.
      * - Build a `TaackFilter.FilterBuilder` for `MyLibraryAuthor`:
      *   - Set a max of 10 lines per page.
      *   - Sort results by last name in ascending order.
-     *   - If `isSelect` is true, add a filter to show only active authors by calling `buildIsActiveAuthorFilter(author)`.
+     *   - If the user is not an admin, add a filter to show only active authors by calling `buildIsActiveAuthorFilter(author)`.
+     *   - If `isSelect` is true, also add a filter to show only active authors.
      * - Use `iterate(filter.build())` to iterate through each author result:
      *   - In each row:
      *     - Add a rowAction linking the author's first name to the `showAuthor` action in the controller.
      *     - If `isSelect` is true, add a SELECT action icon to select the author (using ActionIcon.SELECT).
      *     - Add the author's last name as a field.
-     *     - If not `isSelect`:
+     *     - If not `isSelect` and the user is an admin:
      *       - Add the author's `isActive_` status as a field.
      *       - Add DELETE and ACTIVATE action icons linked to `deleteAuthor` and `activateAuthor` controller actions.
      *
@@ -204,13 +222,9 @@ class MyLibraryUiService implements WebAttributes {
      *
      * **Outputs:** Returns a `UiTableSpecifier` rendering the author table with appropriate columns and actions.
      *
-     * **Tips:**
-     * - Ensure correct use of `rowAction` syntax to link actions and display labels.
-     * - Remember to cast controller method references with `as MC` when used as closures in actions.
      */
     UiTableSpecifier buildAuthorTable(Boolean isSelect = false) {
-        //ADDED line
-        boolean isAdmin = isAdmin()
+        // TODO 4.1.1: Determine if the current user is an admin by calling isAdmin() and store result in isAdmin.
 
         MyLibraryAuthor author = new MyLibraryAuthor()
         UiTableSpecifier authorTableSpecifier = new UiTableSpecifier()
@@ -219,7 +233,7 @@ class MyLibraryUiService implements WebAttributes {
             header {
                 column {label author.firstName_}
                 label author.lastName_
-                if(!isSelect && isAdmin) { //ADDED && isAdmin
+                if(!isSelect) { // TODO 4.1.2: Add && isAdmin condition to display admin columns only for admins.
                     label author.isActive_
                     label "Delete Author"
                 }
@@ -229,8 +243,7 @@ class MyLibraryUiService implements WebAttributes {
                     .setMaxNumberOfLine(10)
                     .setSortOrder(TaackFilter.Order.ASC, author.lastName_)
 
-            //ADDED if statement
-            if(!isAdmin) {filter.addFilter(buildIsActiveAuthorFilter(author))}
+            // TODO 4.1.3: If user is not admin, add filter buildIsActiveAuthorFilter.
 
             if(isSelect) {filter.addFilter(buildIsActiveAuthorFilter(author))}
             iterate(
@@ -240,7 +253,7 @@ class MyLibraryUiService implements WebAttributes {
                     if (isSelect) {rowAction tr('default.role.label'), ActionIcon.SELECT * IconStyle.SCALE_DOWN, authorIterator.id, authorIterator.toString()}
                 }
                 rowField authorIterator.lastName_
-                if(!isSelect && isAdmin) { //ADDED && isAdmin
+                if(!isSelect) {  // TODO 4.1.4: Add && isAdmin condition to display admin row fields only for admins.
                     rowField authorIterator.isActive_
                     rowColumn {
                         rowAction ActionIcon.DELETE * IconStyle.SCALE_DOWN, MyLibraryController.&deleteAuthor as MC, authorIterator.id
@@ -328,9 +341,10 @@ class MyLibraryUiService implements WebAttributes {
      * Builds the table displaying books with their title, author (if no specific author is provided),
      * number of instances, and action buttons for viewing, editing, modifying instances, and requesting books.
      *
-     * **Purpose:** Generates the book listing table for either all books or books by a specific author, with actions to manage or request books.
+     * **Purpose:** Generates the book listing table for either all books or books by a specific author, with actions to manage or request books, and displays options based on user admin status.
      *
      * **How it works (to implement):**
+     * - Determines if the current user is an admin by calling `isAdmin()`.
      * - Creates a new instance of `MyLibraryBook`.
      * - Creates a new `UiTableSpecifier` for displaying book data.
      * - Defines the table UI with:
@@ -338,21 +352,20 @@ class MyLibraryUiService implements WebAttributes {
      *     - Title column.
      *     - Author column (if no specific author is provided).
      *     - Number of instances column.
-     *     - **New features (TODO 3.10):**
-     *       - "Number of Available Book Instances" label.
-     *       - "Request Form" column.
-     *   - Builds a filter for `MyLibraryBook`:
+     *     - "Number of Available Book Instances" label.
+     *     - "Modify number of Book Instances" column.
+     *     - "Request Form" column, displayed only if user is not admin.
+     * - Builds a filter for `MyLibraryBook`:
      *     - Sets max number of lines to 10.
      *     - Sorts by title ascending.
      *     - Restricts to the author's books if an author is provided.
      * - Iterates through the filtered results to display:
      *   - SHOW and EDIT actions with title field.
      *   - Author field (if no specific author).
-     *   - Number of instances.
-     *   - **New features (TODO 3.10):**
-     *     - Number of available books field.
-     *     - "Request Book" action.
-     *   - DELETE and ADD actions for managing book instances.
+     *   - Number of instances (shown only to admins).
+     *   - Number of available books field.
+     *   - If user is admin, shows DELETE and ADD actions to manage book instances.
+     *   - If user is not admin, shows REQUEST action to request a book.
      *
      * **Inputs:**
      * - `author`: Optional. If provided, displays only books by this author.
@@ -360,8 +373,8 @@ class MyLibraryUiService implements WebAttributes {
      * **Outputs:** Returns a `UiTableSpecifier` rendering the book table with appropriate columns and actions.
      */
     UiTableSpecifier buildBookTable(MyLibraryAuthor author = null) {
-        //ADDED line
-        boolean isAdmin = isAdmin()
+        // TODO 4.2.1: Determine if current user is admin by calling isAdmin() and store in isAdmin.
+
 
         MyLibraryBook book = new MyLibraryBook()
         UiTableSpecifier bookTableSpecifier = new UiTableSpecifier()
@@ -369,17 +382,18 @@ class MyLibraryUiService implements WebAttributes {
             header {
                 column {label book.title_}
                 if (!author) {sortableFieldHeader book.author_}
-                column {label "Number of instances "}
+                column {label "Number of instances "} // TODO 4.2.2: Add isAdmin condition to display the Number of instances only for admin.
                 if (!author) {
                     label "Number of Available Book Instances"
-                    column {label "Modify number of Book Instances"}
-                    label "Request Form"
+                    column {label "Modify number of Book Instances"} // TODO 4.2.3: Add isAdmin condition to display only for admin.
+                    label "Request Form" // TODO 4.2.4: Add !isAdmin condition to display the Request Form only for borrowers.
                 }
             }
             TaackFilter.FilterBuilder filter =  taackFilterService.getBuilder(MyLibraryBook)
                     .setMaxNumberOfLine(10)
                     .setSortOrder(TaackFilter.Order.ASC, book.title_)
 
+            // TODO 4.2.5: If user is not admin, add filter buildIsAvailableBookFilter.
             if(author) {filter.addRestrictedIds(author.listOfBooks*.id as Long[])}
             iterate(
                     filter.build()) { MyLibraryBook bookIterator ->
@@ -389,18 +403,17 @@ class MyLibraryUiService implements WebAttributes {
                     rowField bookIterator.title_
                 }
                 if (!author) {rowField bookIterator.author_}
-                if (isAdmin) {rowColumn {rowField bookIterator.numberOfInstances_}} //ADDED if
+                rowColumn {rowField bookIterator.numberOfInstances_} // TODO 4.2.6: Add !isAdmin condition to display admin columns only for admins.
                 if (!author) {
                     rowField bookIterator.numberOfBooksBorrowable_
-                    if(isAdmin) { //ADDED the if not the content
-                        rowColumn {
-                            rowAction ActionIcon.DELETE * IconStyle.SCALE_DOWN, MyLibraryController.&selectBookInstance as MC, bookIterator.id
-                            rowAction ActionIcon.ADD * IconStyle.SCALE_DOWN, MyLibraryController.&purchaseBook as MC, bookIterator.id
-                        }
-                    } else { // ADDED the else not the content
-                        rowColumn {
-                            rowAction ActionIcon.CREATE * IconStyle.SCALE_DOWN, MyLibraryController.&requestBookInstance as MC, bookIterator.id
-                        }
+                    // TODO 4.2.7: If user is admin, add DELETE and ADD actions for managing instances.
+                    // TODO 4.2.8: If user is not admin, add CREATE action to request book instance.
+                    rowColumn {
+                        rowAction ActionIcon.DELETE * IconStyle.SCALE_DOWN, MyLibraryController.&selectBookInstance as MC, bookIterator.id
+                        rowAction ActionIcon.ADD * IconStyle.SCALE_DOWN, MyLibraryController.&purchaseBook as MC, bookIterator.id
+                    }
+                    rowColumn {
+                        rowAction ActionIcon.CREATE * IconStyle.SCALE_DOWN, MyLibraryController.&requestBookInstance as MC, bookIterator.id
                     }
                 }
             }
@@ -686,46 +699,44 @@ class MyLibraryUiService implements WebAttributes {
 
     /**
      * Builds a table displaying user borrow records, including book details, request and approval dates,
-     * status, and actions to approve or return books depending on their current status.
+     * status, and actions to approve or return books depending on their current status, with logic adapting based on user role.
      *
-     * **Purpose:** Allows librarians or users to view their borrowed books, approve requests, or return books.
+     * **Purpose:** Allows librarians to view and manage borrow records for all users, and users to view their own borrowed books.
      *
      * **How it works (to implement):**
-     * - Create instances of:
+     * - Determines if the current user is an admin by calling `isAdmin()`.
+     * - Accepts additional parameters:
+     *   - `showUser`: If provided, shows borrow records for that specific user.
+     *   - `isUser`: Indicates if the viewer is a user (true) or admin (false).
+     * - Creates instances of:
      *   - `MyLibraryBook` to reference book fields.
      *   - `MyLibraryBorrowed` to access borrow record fields.
      *   - `MyLibraryBookInstance` to link borrow records to physical copies.
-     * - Create a new `UiTableSpecifier` for displaying borrow data.
-     * - Define a UI block with:
-     *   - A header containing:
-     *     - Sortable columns for book title and author.
-     *     - Status of approval (if currently borrowed).
-     *     - Request and approval dates.
-     *     - "Return Book" column if currently borrowed.
-     *     - User column.
-     *     - "Approve Book" column if currently borrowed.
-     * - Build a filter using `taackFilterService.getBuilder` for `MyLibraryBorrowed`:
-     *   - Set max number of lines to 10.
-     *   - Sort by book title.
-     *   - If `isCurrently` is true, filter to borrow records with no return date (currently borrowed).
-     *   - Otherwise, filter to borrow records with a return date (past borrowings).
-     * - Iterate through filtered results to display:
+     * - Creates a new `UiTableSpecifier` for displaying borrow data.
+     * - Defines a UI block with:
+     *   - Headers for book title, author, status (if currently borrowed), request/approval dates, return/approve actions, and user column if admin.
+     * - Retrieves the current user from `springSecurityService` or uses `showUser` if provided.
+     * - Builds a filter:
+     *   - Filters records for the current user if not admin, or for `showUser` if provided.
+     *   - Filters by returnDate nullity to distinguish current vs. past borrowings.
+     * - Iterates through filtered results to display:
      *   - SHOW action for each borrow record with book title.
      *   - Book author.
      *   - Status of approval (if currently borrowed).
      *   - Request and approval dates.
-     *   - DELETE action for returning the book if currently borrowed and approved.
-     *   - User username.
-     *   - DELETE action for approving the book if currently borrowed.
+     *   - Return action if currently borrowed and approved (for users).
+     *   - User username (for admins).
+     *   - Approve action (for admins if no specific user is shown).
      *
      * **Inputs:**
-     * - `isCurrently`: Boolean flag to indicate if the table displays current borrowings (true) or past borrowings (false).
+     * - `isCurrently`: Boolean flag indicating if table shows current borrowings (true) or past borrowings (false).
+     * - `showUser`: Optional. Displays borrow records for a specific user if provided.
+     * - `isUser`: Boolean flag indicating if viewer is a user (true) or admin (false).
      *
      * **Outputs:** Returns a `UiTableSpecifier` rendering the borrow records table with appropriate columns and actions.
      */
-    UiTableSpecifier buildUserBorrowsTable(isCurrently = false, User showUser = null, isUser = false) { // ADDED the 2 variables
-        // ADDED the line
-        Boolean isAdmin = isAdmin()
+    UiTableSpecifier buildUserBorrowsTable(isCurrently = false, User showUser = null, isUser = false) {
+        // TODO 4.3.1: Determine if current user is admin by calling isAdmin() and store in isAdmin.
 
         MyLibraryBook book = new MyLibraryBook()
         MyLibraryBorrowed borrowed = new MyLibraryBorrowed()
@@ -739,29 +750,19 @@ class MyLibraryUiService implements WebAttributes {
                 if (isCurrently) {label borrowed.statusOfApproval_}
                 label borrowed.requestDate_
                 label borrowed.approvalDate_
-                if (isCurrently  && !isAdmin) column {label "Return Book"} // ADDED && !isAdmin
-                if(isAdmin) { // ADDED if isAdmin
-                    column { label borrowed.user_ }
-                    if (!showUser) { // ADDED replaced isCurrently with !showUser
-                        label "Approve Book"
-                    }
+                if (isCurrently) column {label "Return Book"} // TODO 4.3.2: Add && !isAdmin condition to display "Return Book" column only for users in borrowed menu
+                // TODO 4.3.3: Add condition isAdmin, to display borrowed user and Approve Book (if !showUser) columns
+                column { label borrowed.user_ }
+                label "Approve Book"
                 }
-            }
 
-            // ADDED block
-            User currentUser = springSecurityService.currentUser as User
-            if (showUser) {
-                currentUser = showUser
-            }
+            // TODO 4.3.4: Retrieve currentUser from springSecurityService or use showUser if provided.
 
             TaackFilter.FilterBuilder filter = taackFilterService.getBuilder(MyLibraryBorrowed)
                     .setMaxNumberOfLine(10)
                     .setSortOrder(TaackFilter.Order.ASC, borrowed.bookInstance_,bookInstance.book_,book.title_)
 
-            // ADDED if
-            if(!isUser || showUser) {
-                filter.addFilter(new FilterExpression(currentUser, Operator.EQ, borrowed.user_))
-            }
+            // TODO 4.3.5: If viewer is not user or showUser is provided, filter by currentUser.
 
             if(isCurrently) {filter.addFilter(new FilterExpression(null, Operator.EQ, borrowed.returnDate_))}
             else {filter.addFilter(new FilterExpression(null, Operator.NE, borrowed.returnDate_))}
@@ -776,21 +777,16 @@ class MyLibraryUiService implements WebAttributes {
                 if(isCurrently) {rowField borrowedIterator.statusOfApproval_}
                 rowField borrowedIterator.requestDate_
                 rowField borrowedIterator.approvalDate_
-                if (isCurrently && !isAdmin) { //ADDED && !isAdmin
+                if (isCurrently) {  // TODO 4.3.6: Add && !isAdmin condition to display rowColumn only for borrowers.
                     rowColumn {
                         if (borrowedIterator.statusOfApproval == ApprovalStatus.APPROVED) {
                             rowAction ActionIcon.DELETE * IconStyle.SCALE_DOWN, MyLibraryController.&returnBook as MC, borrowedIterator.id
                         }
                     }
                 }
-                if(isAdmin) { // ADDED if  isAdmin
-                    rowColumn { rowField borrowedIterator.user.username_ }
-                    if (!showUser) { // ADDED replace isCurrenlty by !showUser
-                        rowColumn {
-                            rowAction ActionIcon.DELETE * IconStyle.SCALE_DOWN, MyLibraryController.&approveBook as MC, borrowedIterator.id
-                        }
-                    }
-                }
+                // TODO 4.3.7: Add condition isAdmin, to display borrowed user and Approve Book (if !showUser) rowColumns
+                rowColumn { rowField borrowedIterator.user.username_ }
+                rowColumn {rowAction ActionIcon.DELETE * IconStyle.SCALE_DOWN, MyLibraryController.&approveBook as MC, borrowedIterator.id}
             }
         }
     }
@@ -931,30 +927,75 @@ class MyLibraryUiService implements WebAttributes {
     /* Users Menu                                                 */
     /*------------------------------------------------------------*/
 
+    /**
+     * Builds a table displaying all users with their username and authorities.
+     *
+     * **Purpose:** Allows admins to view the list of registered users in the system along with their roles.
+     *
+     * **How it works (to implement):**
+     * - Creates instances of:
+     *   - `MyLibraryBorrowed` (unused here but declared, likely for consistency in UI service methods).
+     *   - `User` to access user fields.
+     * - Creates a new `UiTableSpecifier` to define the table structure.
+     * - Defines the table UI:
+     *   - A header with columns for username and authorities.
+     * - Builds a filter using `taackFilterService.getBuilder(User)`:
+     *   - Sorts users by username ascending.
+     *   - Limits results to 10 users per page.
+     * - Iterates over the filtered results to display:
+     *   - A SHOW action for each user linking to the `showUser` controller action.
+     *   - Username field.
+     *   - Authorities field.
+     *
+     * **Inputs:** None directly; retrieves all users from the database.
+     *
+     * **Outputs:** Returns a `UiTableSpecifier` rendering the users table with their username and authorities.
+     */
     UiTableSpecifier buildUsersTable() {
-        MyLibraryBorrowed borrowed = new MyLibraryBorrowed()
-        UiTableSpecifier buildUsersSpecifier = new UiTableSpecifier()
-        User user = new User()
+        // TODO 5.1.1: Create a new instance of MyLibraryBorrowed.
+        // TODO 5.1.2: Create a new UiTableSpecifier named buildUsersSpecifier.
+        // TODO 5.1.3: Create a new instance of User.
 
-        buildUsersSpecifier.ui {
-            header {
-                label user.username_
-                label "Authorities"
-            }
+        // TODO 5.1.4: Define buildUsersSpecifier.ui block.
+        // Inside ui block:
+        // - TODO 5.1.5: Define header block with labels for username and authorities.
 
-            TaackFilter taackFilter = taackFilterService.getBuilder(User)
-                    .setSortOrder(TaackFilter.Order.ASC, user.username_)
-                    .setMaxNumberOfLine(10).build()
+        // - TODO 5.1.6: Build a TaackFilter for User, sorted by username ascending, max 10 per page.
 
-            iterate taackFilter, {User userIterator ->
-                rowColumn {
-                    rowAction ActionIcon.SHOW * IconStyle.SCALE_DOWN, MyLibraryController.&showUser as MC, userIterator.id
-                    rowField userIterator.username_
-                }
-                rowField userIterator.authorities_
-            }
-        }
+        // - TODO 5.1.7: Iterate over taackFilter results.
+        // For each user:
+        //   - TODO 5.1.8: Add a rowColumn with SHOW action linking to MyLibraryController.showUser and rowField for username.
+        //   - TODO 5.1.9: Add rowField for user authorities.
+
+        //delete after implementation
+        return new UiTableSpecifier()
     }
+
+    /**
+     * Builds a read-only detail view specifier for displaying user information.
+     *
+     * **Purpose:** Shows the username, first name, last name, and authorities of a user in a non-editable format.
+     *
+     * **Inputs:**
+     * - `user`: The user whose details are to be displayed.
+     *
+     * **Outputs:** Returns a `UiShowSpecifier` configured to display the user's details.
+     */
+    UiShowSpecifier buildUserShow(User user) {
+        // TODO 5.3.1: Create a new UiShowSpecifier named userShowSpecifier.
+        // TODO 5.3.2: Define userShowSpecifier.ui block for the given user.
+        // Inside ui block:
+        // - TODO 5.3.3: Add fieldLabeled for user.username_.
+        // - TODO 5.3.4: Add fieldLabeled for user.firstName_.
+        // - TODO 5.3.5: Add fieldLabeled for user.lastName_.
+        // - TODO 5.3.6: Add fieldLabeled for user.authorities_.
+
+        //delete after implementation
+        return new UiShowSpecifier()
+    }
+
+
+
 
 }
 
