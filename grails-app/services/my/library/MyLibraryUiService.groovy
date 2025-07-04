@@ -393,7 +393,13 @@ class MyLibraryUiService implements WebAttributes {
                     .setMaxNumberOfLine(10)
                     .setSortOrder(TaackFilter.Order.ASC, book.title_)
 
-            // TODO 4.2.5: If user is not admin, add filter buildIsAvailableBookFilter.
+            // TODO 4.2.5.1: Check if user is not admin using if(!isAdmin).
+            // Inside the if block:
+            // - TODO 4.2.5.2: Create a new instance of MyLibraryBookInstance named bookInstance.
+            // - TODO 4.2.5.3: Add a filter to filter only available book instances
+            //      by creating a new FilterExpression comparing book.listOfBookInstance_ and bookInstance.isAvailableB_
+            //      using Operator.EQ, with true as the comparison value. Add this filter to the filter builder.
+
             if(author) {filter.addRestrictedIds(author.listOfBooks*.id as Long[])}
             iterate(
                     filter.build()) { MyLibraryBook bookIterator ->
