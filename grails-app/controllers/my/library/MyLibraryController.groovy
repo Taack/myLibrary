@@ -113,7 +113,7 @@ class MyLibraryController implements WebAttributes {
      *
      * **Outputs:** Displays the modal form to the user.
      */
-    // TODO 6.1.1: Add @Secured(['ROLE_ADMIN'])
+    @Secured(['ROLE_ADMIN'])
     def createAuthor(MyLibraryAuthor author) {
         UiFormSpecifier formAuthorSpecifier = myLibraryUiService.buildAuthorForm(author)
 
@@ -138,7 +138,7 @@ class MyLibraryController implements WebAttributes {
      *
      * **Outputs:** Updates the author's active status in the database and redirects to the author list view.
      */
-    // TODO 6.1.2: Add @Secured(['ROLE_ADMIN'])
+    @Secured(['ROLE_ADMIN'])
     @Transactional
     def deleteAuthor(MyLibraryAuthor author) {
         author.isActive = false
@@ -159,7 +159,7 @@ class MyLibraryController implements WebAttributes {
      *
      * **Outputs:** Updates the author's active status in the database and redirects to the author list view.
      */
-    // TODO 6.1.3: Add @Secured(['ROLE_ADMIN'])
+    @Secured(['ROLE_ADMIN'])
     @Transactional
     def activateAuthor(MyLibraryAuthor author) {
         author.isActive = true
@@ -180,7 +180,7 @@ class MyLibraryController implements WebAttributes {
      * **Inputs:** None directly; uses request parameters bound to MyLibraryAuthor.
      * **Outputs:** Persists data and updates the UI accordingly.
      */
-    // TODO 6.1.4: Add @Secured(['ROLE_ADMIN'])
+    @Secured(['ROLE_ADMIN'])
     @Transactional
     def saveAuthor() {
         taackSaveService.saveThenReloadOrRenderErrors(MyLibraryAuthor)
@@ -292,7 +292,7 @@ class MyLibraryController implements WebAttributes {
      *
      * **Outputs:** Displays the modal form to the user.
      */
-    // TODO 6.1.5: Add @Secured(['ROLE_ADMIN'])
+    @Secured(['ROLE_ADMIN'])
     def createBook(MyLibraryBook book) {
         UiFormSpecifier tableFormSpecifier = myLibraryUiService.buildBookForm(book)
 
@@ -317,7 +317,7 @@ class MyLibraryController implements WebAttributes {
      *
      * **Outputs:** Displays the modal form to the user.
      */
-    // TODO 6.1.6: Add @Secured(['ROLE_ADMIN'])
+    @Secured(['ROLE_ADMIN'])
     def purchaseBook(MyLibraryBook book) {
         UiFormSpecifier tableAddBookInstanceSpecifier = myLibraryUiService.buildBookPurchase(book)
 
@@ -445,7 +445,7 @@ class MyLibraryController implements WebAttributes {
      *
      * **Outputs:** Deactivates the book instance and refreshes the UI to reflect the change.
      */
-    // TODO 6.1.7: Add @Secured(['ROLE_ADMIN'])
+    @Secured(['ROLE_ADMIN'])
     @Transactional
     def deleteBookInstances(MyLibraryBookInstance bookInstance) {
         MyLibraryBook book = MyLibraryBook.get(params.long('bookId'))
@@ -558,7 +558,7 @@ class MyLibraryController implements WebAttributes {
      *
      * **Outputs:** Renders the current borrowings table with a filter bar.
      */
-    // TODO 6.1.8: Add @Secured(['ROLE_BORROWER'])
+    @Secured(['ROLE_BORROWER'])
     def listBooksCurrentlyBorrowed() {
         UiTableSpecifier tableUserBorrowsSpecifier = myLibraryUiService.buildUserBorrowsTable(true)
         UiFilterSpecifier filterUserBorrowsSpecifier = myLibraryUiService.buildUserBorrowsFilter()
@@ -633,7 +633,7 @@ class MyLibraryController implements WebAttributes {
      *
      * **Outputs:** Renders the borrow records table with a filter bar for past borrowings.
      */
-    // TODO 6.1.9: Add @Secured(['ROLE_BORROWER'])
+    @Secured(['ROLE_BORROWER'])
     def listBooksBorrowed() {
         UiTableSpecifier tableUserBorrowsSpecifier = myLibraryUiService.buildUserBorrowsTable()
         UiFilterSpecifier filterUserBorrowsSpecifier = myLibraryUiService.buildUserBorrowsFilter()
@@ -739,7 +739,7 @@ class MyLibraryController implements WebAttributes {
      *
      * **Outputs:** Renders the table of current borrow requests with a filter bar and navigation menu.
      */
-    // TODO 6.1.10: Add @Secured(['ROLE_ADMIN'])
+    @Secured(['ROLE_ADMIN'])
     def listOfRequests() {
         UiTableSpecifier tableUserBorrowsSpecifier = myLibraryUiService.buildUserBorrowsTable(true, null, true)
         UiFilterSpecifier filterUserBorrowsSpecifier = myLibraryUiService.buildUserBorrowsFilter()
@@ -760,7 +760,7 @@ class MyLibraryController implements WebAttributes {
      *
      * **Outputs:** Renders the users table with a navigation menu.
      */
-    // TODO 6.1.11: Add @Secured(['ROLE_ADMIN'])
+    @Secured(['ROLE_ADMIN'])
     def listOfUsers() {
         UiTableSpecifier tableUsersSpecifier = myLibraryUiService.buildUsersTable()
 

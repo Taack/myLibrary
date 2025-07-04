@@ -125,11 +125,8 @@ class MyLibrarySecurityService {
      * - Returns true if its `statusOfApproval` is not APPROVED.
      */
     private static boolean approvedSecurityClosure(Long id, Map p) {
-        // TODO 6.2.1: Retrieve the MyLibraryBorrowed object by ID using MyLibraryBorrowed.get(id).
-        // TODO 6.2.2: Return true if its statusOfApproval is not ApprovalStatus.APPROVED, otherwise return false.
-
-        //delete after implementation
-        return true
+        MyLibraryBorrowed borrowed = MyLibraryBorrowed.get(id)
+        return (borrowed.statusOfApproval != ApprovalStatus.APPROVED)
     }
 
     /**
@@ -162,10 +159,9 @@ class MyLibrarySecurityService {
                 this.&returnSecurityClosure,
                 MyLibraryController.&returnBook as MethodClosure)
 
-        // TODO 6.2.3: Register the approvedSecurityClosure with TaackUiEnablerService.securityClosure.
-        // Inside securityClosure call:
-        // - TODO 6.2.4: Pass this.&approvedSecurityClosure as the security closure reference.
-        // - TODO 6.2.5: Pass MyLibraryController.&approveBook as MethodClosure as the secured controller action.
+        TaackUiEnablerService.securityClosure(
+                this.&approvedSecurityClosure,
+                MyLibraryController.&approveBook as MethodClosure)
 
         TaackAppRegisterService.register(new TaackApp(MyLibraryController.&index as MethodClosure, new String(this.class.getResourceAsStream("/myLibrary/library-svgrepo-com.svg").readAllBytes())))
 
