@@ -781,7 +781,7 @@ class MyLibraryController implements WebAttributes {
      * **Outputs:** Renders the user detail view and both borrow tables inside a modal.
      */
     def showUser(User user) {
-        // TODO 5.4.1: Build showSpec by calling MyLibraryUiService.buildUserShow(user).
+        // TODO 5.4.1: Build showSpec by calling myLibraryUiService.buildUserShow(user).
         // TODO 5.4.2: Build userBorrowsSpecifier by calling myLibraryUiService.buildUserBorrowsTable(false, user).
         // TODO 5.4.3: Build userBorrowsFilterSpecifier by calling myLibraryUiService.buildUserBorrowsFilter().
         // TODO 5.4.4: Build userBorrowsCurrentlySpecifier by calling myLibraryUiService.buildUserBorrowsTable(true, user).
