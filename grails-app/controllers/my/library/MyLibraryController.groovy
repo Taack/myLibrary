@@ -762,11 +762,11 @@ class MyLibraryController implements WebAttributes {
      */
     // TODO 6.1.11: Add @Secured(['ROLE_ADMIN'])
     def listOfUsers() {
-        // TODO 5.2.1: Build tableUsersSpecifier by calling myLibraryUiService.buildUsersTable().
-        // TODO 5.2.2: Use taackUiService.show to render a UiBlockSpecifier.
-        // Inside show block:
-        // - TODO 5.2.3: Add table using tableUsersSpecifier.
-        // TODO 5.2.4: Include the general menu by calling myLibraryUiService.buildMenu().
+        UiTableSpecifier tableUsersSpecifier = myLibraryUiService.buildUsersTable()
+
+        taackUiService.show(new UiBlockSpecifier().ui {
+            table tableUsersSpecifier
+        }, myLibraryUiService.buildMenu())
     }
 
     /**
@@ -780,17 +780,19 @@ class MyLibraryController implements WebAttributes {
      * **Outputs:** Renders the user detail view and both borrow tables inside a modal.
      */
     def showUser(User user) {
-        // TODO 5.4.1: Build showSpec by calling MyLibraryUiService.buildUserShow(user).
-        // TODO 5.4.2: Build userBorrowsSpecifier by calling myLibraryUiService.buildUserBorrowsTable(false, user).
-        // TODO 5.4.3: Build userBorrowsFilterSpecifier by calling myLibraryUiService.buildUserBorrowsFilter().
-        // TODO 5.4.4: Build userBorrowsCurrentlySpecifier by calling myLibraryUiService.buildUserBorrowsTable(true, user).
+        UiShowSpecifier showSpec = myLibraryUiService.buildUserShow(user)
+        UiTableSpecifier userBorrowsSpecifier = myLibraryUiService.buildUserBorrowsTable(false, user)
+        UiFilterSpecifier userBorrowsFilterSpecifier = myLibraryUiService.buildUserBorrowsFilter()
+        UiTableSpecifier userBorrowsCurrentlySpecifier = myLibraryUiService.buildUserBorrowsTable(true, user)
 
-        // TODO 5.4.5: Use taackUiService.show to render a UiBlockSpecifier.
-        // Inside show block:
-        // - TODO 5.4.6: Define a modal block.
-        //   - TODO 5.4.7: Add show using showSpec.
-        //   - TODO 5.4.8: Add tableFilter combining userBorrowsFilterSpecifier and userBorrowsSpecifier.
-        //   - TODO 5.4.9: Add tableFilter combining userBorrowsFilterSpecifier and userBorrowsCurrentlySpecifier.
+        taackUiService.show(new UiBlockSpecifier().ui {
+            modal {
+                show showSpec
+                tableFilter userBorrowsFilterSpecifier, userBorrowsSpecifier
+                tableFilter userBorrowsFilterSpecifier, userBorrowsCurrentlySpecifier
+            }
+        })
+
     }
 
 }

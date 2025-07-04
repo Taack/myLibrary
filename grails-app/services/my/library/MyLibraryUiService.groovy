@@ -961,23 +961,27 @@ class MyLibraryUiService implements WebAttributes {
      * **Outputs:** Returns a `UiTableSpecifier` rendering the users table with their username and authorities.
      */
     UiTableSpecifier buildUsersTable() {
-        // TODO 5.1.1: Create a new instance of MyLibraryBorrowed.
-        // TODO 5.1.2: Create a new UiTableSpecifier named buildUsersSpecifier.
-        // TODO 5.1.3: Create a new instance of User.
+        UiTableSpecifier buildUsersSpecifier = new UiTableSpecifier()
+        User user = new User()
 
-        // TODO 5.1.4: Define buildUsersSpecifier.ui block.
-        // Inside ui block:
-        // - TODO 5.1.5: Define header block with labels for username and authorities.
+        buildUsersSpecifier.ui {
+            header {
+                label user.username_
+                label "Authorities"
+            }
 
-        // - TODO 5.1.6: Build a TaackFilter for User, sorted by username ascending, max 10 per page.
+            TaackFilter taackFilter = taackFilterService.getBuilder(User)
+                    .setSortOrder(TaackFilter.Order.ASC, user.username_)
+                    .setMaxNumberOfLine(10).build()
 
-        // - TODO 5.1.7: Iterate over taackFilter results.
-        // For each user:
-        //   - TODO 5.1.8: Add a rowColumn with SHOW action linking to MyLibraryController.showUser and rowField for username.
-        //   - TODO 5.1.9: Add rowField for user authorities.
-
-        //delete after implementation
-        return new UiTableSpecifier()
+            iterate taackFilter, {User userIterator ->
+                rowColumn {
+                    rowAction ActionIcon.SHOW * IconStyle.SCALE_DOWN, MyLibraryController.&showUser as MC, userIterator.id
+                    rowField userIterator.username_
+                }
+                rowField userIterator.authorities_
+            }
+        }
     }
 
     /**
@@ -991,16 +995,14 @@ class MyLibraryUiService implements WebAttributes {
      * **Outputs:** Returns a `UiShowSpecifier` configured to display the user's details.
      */
     UiShowSpecifier buildUserShow(User user) {
-        // TODO 5.3.1: Create a new UiShowSpecifier named userShowSpecifier.
-        // TODO 5.3.2: Define userShowSpecifier.ui block for the given user.
-        // Inside ui block:
-        // - TODO 5.3.3: Add fieldLabeled for user.username_.
-        // - TODO 5.3.4: Add fieldLabeled for user.firstName_.
-        // - TODO 5.3.5: Add fieldLabeled for user.lastName_.
-        // - TODO 5.3.6: Add fieldLabeled for user.authorities_.
+        UiShowSpecifier userShowSpecifier = new UiShowSpecifier()
 
-        //delete after implementation
-        return new UiShowSpecifier()
+        userShowSpecifier.ui(user, {
+            fieldLabeled user.username_
+            fieldLabeled user.firstName_
+            fieldLabeled user.lastName_
+            fieldLabeled user.authorities_
+        })
     }
 
 
