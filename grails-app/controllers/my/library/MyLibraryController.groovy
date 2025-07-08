@@ -234,6 +234,7 @@ class MyLibraryController implements WebAttributes {
      *
      * **Outputs:** Displays a modal for author selection.
      */
+    // TODO 6.1.5: Add @Secured(['ROLE_ADMIN'])
     def selectAuthor() {
         UiTableSpecifier tableAuthorSpecifier = myLibraryUiService.buildAuthorTable(true)
         UiFilterSpecifier filterAuthorSpecifier = myLibraryUiService.buildAuthorFilter()
@@ -293,7 +294,7 @@ class MyLibraryController implements WebAttributes {
      *
      * **Outputs:** Displays the modal form to the user.
      */
-    // TODO 6.1.5: Add @Secured(['ROLE_ADMIN'])
+    // TODO 6.1.6: Add @Secured(['ROLE_ADMIN'])
     def createBook(MyLibraryBook book) {
         UiFormSpecifier tableFormSpecifier = myLibraryUiService.buildBookForm(book)
 
@@ -318,7 +319,7 @@ class MyLibraryController implements WebAttributes {
      *
      * **Outputs:** Displays the modal form to the user.
      */
-    // TODO 6.1.6: Add @Secured(['ROLE_ADMIN'])
+    // TODO 6.1.7: Add @Secured(['ROLE_ADMIN'])
     def purchaseBook(MyLibraryBook book) {
         UiFormSpecifier tableAddBookInstanceSpecifier = myLibraryUiService.buildBookPurchase(book)
 
@@ -348,6 +349,7 @@ class MyLibraryController implements WebAttributes {
      *
      * **Outputs:** Adds the specified book instances and refreshes the UI.
      */
+    // TODO 6.1.8: Add @Secured(['ROLE_ADMIN'])
     @Transactional
     def purchaseAndSaveBook(NumberForInstances numberForInstances, MyLibraryBook book) {
         for (int i = 0; i < (numberForInstances.numberOfInstances) as Integer; i++) {
@@ -373,6 +375,7 @@ class MyLibraryController implements WebAttributes {
      *
      * **Outputs:** Persists data and updates the UI accordingly.
      */
+    // TODO 6.1.9: Add @Secured(['ROLE_ADMIN'])
     @Transactional
     def saveBook() {
         taackSaveService.saveThenReloadOrRenderErrors(MyLibraryBook)
@@ -416,6 +419,7 @@ class MyLibraryController implements WebAttributes {
      *
      * **Outputs:** Displays a modal listing all instances of the book.
      */
+    // TODO 6.1.10: Add @Secured(['ROLE_ADMIN'])
     def selectBookInstance(MyLibraryBook book) {
         UiTableSpecifier bookInstanceTableSpecifier = myLibraryUiService.buildInstanceBookTable(book)
 
@@ -446,7 +450,7 @@ class MyLibraryController implements WebAttributes {
      *
      * **Outputs:** Deactivates the book instance and refreshes the UI to reflect the change.
      */
-    // TODO 6.1.7: Add @Secured(['ROLE_ADMIN'])
+    // TODO 6.1.11: Add @Secured(['ROLE_ADMIN'])
     @Transactional
     def deleteBookInstances(MyLibraryBookInstance bookInstance) {
         MyLibraryBook book = MyLibraryBook.get(params.long('bookId'))
@@ -484,6 +488,7 @@ class MyLibraryController implements WebAttributes {
      *
      * **Outputs:** Displays the modal request form to the user.
      */
+    // TODO 6.1.12: Add @Secured(['ROLE_BORROWER'])
     def requestBookInstance(MyLibraryBook book){
         UiFormSpecifier requestBookInstanceForm = myLibraryUiService.buildRequestBookForm(book)
 
@@ -508,6 +513,7 @@ class MyLibraryController implements WebAttributes {
      *
      * **Outputs:** Displays a modal with a selectable table of book instances.
      */
+    // TODO 6.1.13: Add @Secured(['ROLE_BORROWER'])
     def selectBookInstanceOne(MyLibraryBook book) {
         UiTableSpecifier bookInstanceTable = myLibraryUiService.buildInstanceBookTable(book, true)
 
@@ -532,6 +538,7 @@ class MyLibraryController implements WebAttributes {
      *
      * **Outputs:** Saves the borrow request, updates availability status, and redirects or renders errors accordingly.
      */
+    // TODO 6.1.14: Add @Secured(['ROLE_BORROWER'])
     @Transactional
     def saveBookForm() {
         MyLibraryBorrowed borrowed = taackSaveService.save(MyLibraryBorrowed)
@@ -559,7 +566,7 @@ class MyLibraryController implements WebAttributes {
      *
      * **Outputs:** Renders the current borrowings table with a filter bar.
      */
-    // TODO 6.1.8: Add @Secured(['ROLE_BORROWER'])
+    // TODO 6.1.15: Add @Secured(['ROLE_BORROWER'])
     def listBooksCurrentlyBorrowed() {
         UiTableSpecifier tableUserBorrowsSpecifier = myLibraryUiService.buildUserBorrowsTable(true)
         UiFilterSpecifier filterUserBorrowsSpecifier = myLibraryUiService.buildUserBorrowsFilter()
@@ -583,6 +590,7 @@ class MyLibraryController implements WebAttributes {
      *
      * **Outputs:** Displays the modal return form to the user.
      */
+    // TODO 6.1.16: Add @Secured(['ROLE_BORROWER'])
     def returnBook(MyLibraryBorrowed borrowed) {
         UiFormSpecifier requestReturnBookInstanceForm = myLibraryUiService.buildRequestReturnBookForm(borrowed)
 
@@ -607,6 +615,7 @@ class MyLibraryController implements WebAttributes {
      *
      * **Outputs:** Saves the return information, updates the book instance availability, and redirects or renders errors accordingly.
      */
+    // TODO 6.1.17: Add @Secured(['ROLE_BORROWER'])
     @Transactional
     def saveReturnBookForm() {
         MyLibraryBorrowed borrowed = taackSaveService.save(MyLibraryBorrowed)
@@ -634,7 +643,7 @@ class MyLibraryController implements WebAttributes {
      *
      * **Outputs:** Renders the borrow records table with a filter bar for past borrowings.
      */
-    // TODO 6.1.9: Add @Secured(['ROLE_BORROWER'])
+    // TODO 6.1.18: Add @Secured(['ROLE_BORROWER'])
     def listBooksBorrowed() {
         UiTableSpecifier tableUserBorrowsSpecifier = myLibraryUiService.buildUserBorrowsTable()
         UiFilterSpecifier filterUserBorrowsSpecifier = myLibraryUiService.buildUserBorrowsFilter()
@@ -686,6 +695,7 @@ class MyLibraryController implements WebAttributes {
      *
      * **Outputs:** Displays the modal approval form to the user.
      */
+    // TODO 6.1.19: Add @Secured(['ROLE_ADMIN'])
     def approveBook(MyLibraryBorrowed borrowed) {
         UiFormSpecifier approveBookSpecifier = myLibraryUiService.buildApproveBookTable(borrowed)
 
@@ -712,6 +722,7 @@ class MyLibraryController implements WebAttributes {
      *
      * **Outputs:** Saves the approval decision, updates return date if rejected, and redirects or renders errors accordingly.
      */
+    // TODO 6.1.20: Add @Secured(['ROLE_ADMIN'])
     @Transactional
     def saveApprovalBookForm() {
         Calendar cal = Calendar.getInstance()
@@ -740,7 +751,7 @@ class MyLibraryController implements WebAttributes {
      *
      * **Outputs:** Renders the table of current borrow requests with a filter bar and navigation menu.
      */
-    // TODO 6.1.10: Add @Secured(['ROLE_ADMIN'])
+    // TODO 6.1.21: Add @Secured(['ROLE_ADMIN'])
     def listOfRequests() {
         // TODO 4.3.8: Build tableUserBorrowsSpecifier by calling myLibraryUiService.buildUserBorrowsTable(true, null, true).
         // TODO 4.3.9: Build filterUserBorrowsSpecifier by calling myLibraryUiService.buildUserBorrowsFilter().
@@ -761,7 +772,7 @@ class MyLibraryController implements WebAttributes {
      *
      * **Outputs:** Renders the users table with a navigation menu.
      */
-    // TODO 6.1.11: Add @Secured(['ROLE_ADMIN'])
+    // TODO 6.1.22: Add @Secured(['ROLE_ADMIN'])
     def listOfUsers() {
         // TODO 5.2.1: Build tableUsersSpecifier by calling myLibraryUiService.buildUsersTable().
         // TODO 5.2.2: Use taackUiService.show to render a UiBlockSpecifier.
@@ -780,10 +791,11 @@ class MyLibraryController implements WebAttributes {
      *
      * **Outputs:** Renders the user detail view and both borrow tables inside a modal.
      */
+    // TODO 6.1.23: Add @Secured(['ROLE_ADMIN'])
     def showUser(User user) {
         // TODO 5.4.1: Build showSpec by calling myLibraryUiService.buildUserShow(user).
         // TODO 5.4.2: Build userBorrowsSpecifier by calling myLibraryUiService.buildUserBorrowsTable(false, user).
-        // TODO 5.4.3: Build userBorrowsFilterSpecifier by calling myLibraryUiService.buildUserBorrowsFilter().
+        // TODO 5.4.3: Build userBorrowsFilterSpecifier by calling myLibraryUiService.buildUserBorrowsFilter(user).
         // TODO 5.4.4: Build userBorrowsCurrentlySpecifier by calling myLibraryUiService.buildUserBorrowsTable(true, user).
 
         // TODO 5.4.5: Use taackUiService.show to render a UiBlockSpecifier.
