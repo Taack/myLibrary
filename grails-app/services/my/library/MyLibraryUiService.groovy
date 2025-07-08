@@ -758,15 +758,16 @@ class MyLibraryUiService implements WebAttributes {
      *
      * **Outputs:** Returns a `UiFilterSpecifier` configured to filter borrow records by book title.
      */
-    UiFilterSpecifier buildUserBorrowsFilter() {
+    UiFilterSpecifier buildUserBorrowsFilter(User user = null) {
         // TODO 3.2.1: Create a new instance of MyLibraryBook named book.
         // TODO 3.2.2: Create a new UiFilterSpecifier named UserBorrowsFilterSpecifier.
         // TODO 3.2.3: Create a new instance of MyLibraryBorrowed named borrowed.
         // TODO 3.2.4: Create a new instance of MyLibraryBookInstance named bookInstance.
         // TODO 3.2.5: Define UserBorrowsFilterSpecifier.ui block for MyLibraryBorrowed.
         // Inside ui block:
-        // - TODO 3.2.6: Define a section titled "Borrows Filter".
-        //   - TODO 3.2.7: Add filterField for borrowed.bookInstance_, bookInstance.book_, and book.title_.
+        // - TODO 3.2.6: Add add the following if statement to pass the user id: if (user) hiddenId(user.id)
+        // - TODO 3.2.7: Define a section titled "Borrows Filter".
+        //   - TODO 3.2.8: Add filterField for borrowed.bookInstance_, bookInstance.book_, and book.title_.
 
         //delete this line when method implemented
         return new UiFilterSpecifier()
