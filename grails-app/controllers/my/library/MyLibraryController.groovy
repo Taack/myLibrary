@@ -782,17 +782,23 @@ class MyLibraryController implements WebAttributes {
     def showUser(User user) {
         UiShowSpecifier showSpec = myLibraryUiService.buildUserShow(user)
         UiTableSpecifier userBorrowsSpecifier = myLibraryUiService.buildUserBorrowsTable(false, user)
-        UiFilterSpecifier userBorrowsFilterSpecifier = myLibraryUiService.buildUserBorrowsFilter()
-        UiTableSpecifier userBorrowsCurrentlySpecifier = myLibraryUiService.buildUserBorrowsTable(true, user)
+        UiFilterSpecifier userBorrowsFilterSpecifier = myLibraryUiService.buildUserBorrowsFilter(user)
+       // UiTableSpecifier userBorrowsCurrentlySpecifier = myLibraryUiService.buildUserBorrowsTable(true, user)
 
         taackUiService.show(new UiBlockSpecifier().ui {
             modal {
                 show showSpec
-                tableFilter userBorrowsFilterSpecifier, userBorrowsSpecifier
-                tableFilter userBorrowsFilterSpecifier, userBorrowsCurrentlySpecifier
+                row {
+                    tableFilter userBorrowsFilterSpecifier, userBorrowsSpecifier
+                   // tableFilter userBorrowsFilterSpecifier, userBorrowsCurrentlySpecifier
+                }
             }
         })
 
     }
+
+
+
+
 
 }

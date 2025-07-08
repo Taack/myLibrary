@@ -819,13 +819,14 @@ class MyLibraryUiService implements WebAttributes {
      *
      * **Outputs:** Returns a `UiFilterSpecifier` configured to filter borrow records by book title.
      */
-    UiFilterSpecifier buildUserBorrowsFilter() {
+    UiFilterSpecifier buildUserBorrowsFilter(User user = null) { //changed
         MyLibraryBook book = new MyLibraryBook()
         UiFilterSpecifier UserBorrowsFilterSpecifier = new UiFilterSpecifier()
         MyLibraryBorrowed borrowed = new MyLibraryBorrowed()
         MyLibraryBookInstance bookInstance = new MyLibraryBookInstance()
 
         UserBorrowsFilterSpecifier.ui MyLibraryBorrowed, {
+            if (user) hiddenId(user.id)
             section "Borrows Filter", {
                 filterField borrowed.bookInstance_,bookInstance.book_,book.title_
             }
