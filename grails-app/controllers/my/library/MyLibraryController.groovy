@@ -233,6 +233,7 @@ class MyLibraryController implements WebAttributes {
      *
      * **Outputs:** Displays a modal for author selection.
      */
+    @Secured(['ROLE_ADMIN'])
     def selectAuthor() {
         UiTableSpecifier tableAuthorSpecifier = myLibraryUiService.buildAuthorTable(true)
         UiFilterSpecifier filterAuthorSpecifier = myLibraryUiService.buildAuthorFilter()
@@ -347,6 +348,7 @@ class MyLibraryController implements WebAttributes {
      *
      * **Outputs:** Adds the specified book instances and refreshes the UI.
      */
+    @Secured(['ROLE_ADMIN'])
     @Transactional
     def purchaseAndSaveBook(NumberForInstances numberForInstances, MyLibraryBook book) {
         for (int i = 0; i < (numberForInstances.numberOfInstances) as Integer; i++) {
@@ -372,6 +374,7 @@ class MyLibraryController implements WebAttributes {
      *
      * **Outputs:** Persists data and updates the UI accordingly.
      */
+    @Secured(['ROLE_ADMIN'])
     @Transactional
     def saveBook() {
         taackSaveService.saveThenReloadOrRenderErrors(MyLibraryBook)
@@ -415,6 +418,7 @@ class MyLibraryController implements WebAttributes {
      *
      * **Outputs:** Displays a modal listing all instances of the book.
      */
+    @Secured(['ROLE_ADMIN'])
     def selectBookInstance(MyLibraryBook book) {
         UiTableSpecifier bookInstanceTableSpecifier = myLibraryUiService.buildInstanceBookTable(book)
 
@@ -483,6 +487,7 @@ class MyLibraryController implements WebAttributes {
      *
      * **Outputs:** Displays the modal request form to the user.
      */
+    @Secured(['ROLE_BORROWER'])
     def requestBookInstance(MyLibraryBook book){
         UiFormSpecifier requestBookInstanceForm = myLibraryUiService.buildRequestBookForm(book)
 
@@ -507,6 +512,7 @@ class MyLibraryController implements WebAttributes {
      *
      * **Outputs:** Displays a modal with a selectable table of book instances.
      */
+    @Secured(['ROLE_BORROWER'])
     def selectBookInstanceOne(MyLibraryBook book) {
         UiTableSpecifier bookInstanceTable = myLibraryUiService.buildInstanceBookTable(book, true)
 
@@ -531,6 +537,7 @@ class MyLibraryController implements WebAttributes {
      *
      * **Outputs:** Saves the borrow request, updates availability status, and redirects or renders errors accordingly.
      */
+    @Secured(['ROLE_BORROWER'])
     @Transactional
     def saveBookForm() {
         MyLibraryBorrowed borrowed = taackSaveService.save(MyLibraryBorrowed)
@@ -582,6 +589,7 @@ class MyLibraryController implements WebAttributes {
      *
      * **Outputs:** Displays the modal return form to the user.
      */
+    @Secured(['ROLE_BORROWER'])
     def returnBook(MyLibraryBorrowed borrowed) {
         UiFormSpecifier requestReturnBookInstanceForm = myLibraryUiService.buildRequestReturnBookForm(borrowed)
 
@@ -606,6 +614,7 @@ class MyLibraryController implements WebAttributes {
      *
      * **Outputs:** Saves the return information, updates the book instance availability, and redirects or renders errors accordingly.
      */
+    @Secured(['ROLE_BORROWER'])
     @Transactional
     def saveReturnBookForm() {
         MyLibraryBorrowed borrowed = taackSaveService.save(MyLibraryBorrowed)
@@ -685,6 +694,7 @@ class MyLibraryController implements WebAttributes {
      *
      * **Outputs:** Displays the modal approval form to the user.
      */
+    @Secured(['ROLE_ADMIN'])
     def approveBook(MyLibraryBorrowed borrowed) {
         UiFormSpecifier approveBookSpecifier = myLibraryUiService.buildApproveBookTable(borrowed)
 
@@ -711,6 +721,7 @@ class MyLibraryController implements WebAttributes {
      *
      * **Outputs:** Saves the approval decision, updates return date if rejected, and redirects or renders errors accordingly.
      */
+    @Secured(['ROLE_ADMIN'])
     @Transactional
     def saveApprovalBookForm() {
         Calendar cal = Calendar.getInstance()
@@ -779,26 +790,21 @@ class MyLibraryController implements WebAttributes {
      *
      * **Outputs:** Renders the user detail view and both borrow tables inside a modal.
      */
+    @Secured(['ROLE_ADMIN'])
     def showUser(User user) {
         UiShowSpecifier showSpec = myLibraryUiService.buildUserShow(user)
         UiTableSpecifier userBorrowsSpecifier = myLibraryUiService.buildUserBorrowsTable(false, user)
-        UiFilterSpecifier userBorrowsFilterSpecifier = myLibraryUiService.buildUserBorrowsFilter(user)
-       // UiTableSpecifier userBorrowsCurrentlySpecifier = myLibraryUiService.buildUserBorrowsTable(true, user)
+        UiFilterSpecifier userBorrowsFilterSpecifier = myLibraryUiService.buildUserBorrowsFilter()
+        UiTableSpecifier userBorrowsCurrentlySpecifier = myLibraryUiService.buildUserBorrowsTable(true, user)
 
         taackUiService.show(new UiBlockSpecifier().ui {
             modal {
                 show showSpec
-                row {
-                    tableFilter userBorrowsFilterSpecifier, userBorrowsSpecifier
-                   // tableFilter userBorrowsFilterSpecifier, userBorrowsCurrentlySpecifier
-                }
+                tableFilter userBorrowsFilterSpecifier, userBorrowsSpecifier
+                tableFilter userBorrowsFilterSpecifier, userBorrowsCurrentlySpecifier
             }
         })
 
     }
-
-
-
-
 
 }
