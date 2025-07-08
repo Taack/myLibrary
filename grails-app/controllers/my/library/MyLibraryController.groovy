@@ -58,9 +58,8 @@ class MyLibraryController implements WebAttributes {
      * **Outputs:** Redirects to the listAuthor view.
      */
     def index() {
-        // TODO 3.2.1: Retrieve currentUser from springSecurityService.currentUser and cast to User.
-        // TODO 3.2.2: Determine if currentUser has ROLE_ADMIN and store result in isAdmin. (Using currentUser?.authorities?.any { it.authority == 'ROLE_ADMIN' }
-
+        currentUser = springSecurityService.currentUser as User
+        isAdmin = currentUser?.authorities?.any { it.authority == 'ROLE_ADMIN' }
         redirect action: 'listAuthor'
     }
 
