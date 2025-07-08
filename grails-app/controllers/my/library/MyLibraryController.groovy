@@ -752,12 +752,12 @@ class MyLibraryController implements WebAttributes {
      */
     // TODO 6.1.21: Add @Secured(['ROLE_ADMIN'])
     def listOfRequests() {
-        // TODO 4.3.8: Build tableUserBorrowsSpecifier by calling myLibraryUiService.buildUserBorrowsTable(true, null, true).
-        // TODO 4.3.9: Build filterUserBorrowsSpecifier by calling myLibraryUiService.buildUserBorrowsFilter().
-        // TODO 4.3.10: Use taackUiService.show to render a UiBlockSpecifier.
-        // Inside show block:
-        // - TODO 4.3.11: Add tableFilter combining filterUserBorrowsSpecifier and tableUserBorrowsSpecifier.
-        // TODO 4.3.12: Include the general menu by calling myLibraryUiService.buildMenu().
+        UiTableSpecifier tableUserBorrowsSpecifier = myLibraryUiService.buildUserBorrowsTable(true, null, true)
+        UiFilterSpecifier filterUserBorrowsSpecifier = myLibraryUiService.buildUserBorrowsFilter()
+
+        taackUiService.show(new UiBlockSpecifier().ui {
+            tableFilter filterUserBorrowsSpecifier, tableUserBorrowsSpecifier
+        }, myLibraryUiService.buildMenu())
     }
 
     /*------------------------------------------------------------*/
