@@ -850,10 +850,10 @@ class MyLibraryController implements WebAttributes {
                     // TODO 3.2.2: Add durationDiagramSpec to this column by calling diagram(durationDiagramSpec).
                 }
                 col {
-                    // TODO 1.2.2: Add diagramPieSpec to the UI by calling diagram diagramPieSpec inside this column.
+                    // TODO 1.2.2: Add diagramPieSpec to the UI by calling diagram diagramPieSpec inside this column and add the following label "Author Popularity Pie"
                 }
                 col {
-                    diagram diagramAuthorPieSpec
+                    diagram diagramAuthorPieSpec, {label "Author Popularity Pie"}
                 }
             }
         }, myLibraryUiService.buildMenu())
