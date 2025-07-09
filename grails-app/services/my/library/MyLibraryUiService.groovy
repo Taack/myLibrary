@@ -13,6 +13,7 @@ import taack.ast.annotation.TaackFieldEnum
 import taack.ast.type.FieldInfo
 import taack.ast.type.GetMethodReturn
 import taack.domain.TaackFilterService
+import taack.ui.dsl.UiDiagramSpecifier
 import taack.ui.dsl.UiFilterSpecifier
 import taack.ui.dsl.UiFormSpecifier
 import taack.ui.dsl.UiMenuSpecifier
@@ -20,6 +21,8 @@ import taack.app.TaackApp
 import taack.app.TaackAppRegisterService
 import taack.ui.dsl.UiShowSpecifier
 import taack.ui.dsl.UiTableSpecifier
+import taack.ui.dsl.block.BlockSpec
+import taack.ui.dsl.diagram.DiagramXLabelDateFormat
 import taack.ui.dsl.filter.expression.FilterExpression
 import taack.domain.TaackFilter
 import taack.ui.dsl.common.ActionIcon
@@ -27,6 +30,9 @@ import taack.ui.dsl.common.IconStyle
 
 import javax.swing.Icon
 import java.lang.reflect.Field
+import java.time.LocalDate
+import java.time.ZoneId
+
 import static taack.render.TaackUiService.tr
 import taack.ui.dsl.filter.expression.Operator
 
@@ -119,6 +125,9 @@ class MyLibraryUiService implements WebAttributes {
             menu MyLibraryController.&listBooksCurrentlyBorrowed as MC
             menu MyLibraryController.&listOfUsers as MC
             menu MyLibraryController.&listOfRequests as MC
+
+            //ADDED MENUS
+            menu MyLibraryController.&listDiagrams as MC
         }
     }
 
@@ -741,11 +750,12 @@ class MyLibraryUiService implements WebAttributes {
         MyLibraryBorrowed borrowed = new MyLibraryBorrowed()
         UiTableSpecifier buildUserBorrowsSpecifier = new UiTableSpecifier()
         MyLibraryBookInstance bookInstance = new MyLibraryBookInstance()
+        MyLibraryAuthor author = new MyLibraryAuthor()
 
         buildUserBorrowsSpecifier.ui {
             header {
                 sortableFieldHeader borrowed.bookInstance_,bookInstance.book_,book.title_
-                sortableFieldHeader borrowed.bookInstance_,bookInstance.book_,book.author_
+                sortableFieldHeader borrowed.bookInstance_, bookInstance.book_, book.author_, author.lastName_
                 if (isCurrently) {label borrowed.statusOfApproval_}
                 label borrowed.requestDate_
                 label borrowed.approvalDate_
@@ -1006,8 +1016,237 @@ class MyLibraryUiService implements WebAttributes {
         })
     }
 
+    /*------------------------------------------------------------*/
+    /* Graph Menu                                                 */
+    /*------------------------------------------------------------*/
 
+    /**
+     * **EXAMPLE CODE**
+     *
+     * Builds a pie chart diagram representing the number of books per author.
+     *
+     * **Purpose:** Visualises the distribution of books written by different authors in the library system using a pie chart.
+     *
+     * **Inputs:**
+     * - `hasSlice`: A boolean flag indicating whether the pie chart should display individual slice selection (true) or not (false).
+     *
+     * **Outputs:** Returns a `UiDiagramSpecifier` that defines the pie chart UI with author labels and book counts as data.
+     *
+     * **Implementation steps:**
+     * 1. Create an empty map `authorCounts` to store author last names as keys and their book counts as values.
+     *
+     * 2. Execute an HQL query with `MyLibraryBorrowed.executeQuery` to retrieve:
+     *    - Each author's last name (`book.author`).
+     *    - The count of books per author.
+     *    The query groups the results by author and limits them to a maximum of 10 results.
+     *
+     * 3. Iterate through the results:
+     *    - For each row, extract the author's last name and the count of books.
+     *    - Convert the count to `BigDecimal` and store it in `authorCounts` with the author's last name as the key.
+     *
+     * 4. Create a new `UiDiagramSpecifier` to define the diagram UI.
+     *
+     * 5. Within the UI block:
+     *    - Create a `pie` chart with the `hasSlice` flag.
+     *    - Retrieve a sorted list of author names from `authorCounts`.
+     *    - Retrieve the corresponding counts in the same order.
+     *    - Set the chart label as "Author Pie".
+     *    - Iterate through each author to add a dataset entry to the pie chart with:
+     *      - The author's name as the label.
+     *      - Their book count as the value.
+     */
+    UiDiagramSpecifier buildAuthorPieDiagram(boolean hasSlice) {
+        Map<String, BigDecimal> authorCounts = [:]
 
+        List<Object[]> results = MyLibraryBorrowed.executeQuery("""\
+            select book.author, count(book)
+            from MyLibraryBook book
+            group by book.author
+            """, [max: 10])
+
+        results.each { row ->
+            String lastName = row[0] as String
+            Long count = row[1] as Long
+            authorCounts[lastName] = count.toBigDecimal()
+        }
+
+        new UiDiagramSpecifier().ui {
+            pie(hasSlice, {
+                List<String> authorsSorted = authorCounts.keySet().toList()
+                List<BigDecimal> counts = authorsSorted.collect { authorCounts[it] }
+
+                labels "Author Pie"
+                (0..<authorsSorted.size()).each { i ->
+                    dataset(authorsSorted[i], counts[i])
+                }
+            })
+        }
+    }
+
+    /**
+     * Builds a pie chart diagram showing the popularity of books based on their borrow count.
+     *
+     * **Purpose:**
+     * This method generates a visual representation of the top 10 most borrowed books in the library.
+     * It is useful for librarians and admins to identify which books are the most requested or popular in the system.
+     *
+     * **Functionality:**
+     * - Queries the database to find how many times each book has been borrowed.
+     * - Orders the results to get the most borrowed books, limited to the top 10.
+     * - Constructs a pie chart where each slice represents a book, labelled with its title, and the size of the slice corresponds to its borrow count.
+     * - Uses Taack's `UiDiagramSpecifier` to build and return the pie chart UI.
+     *
+     * **Inputs:**
+     * - `hasSlice`: A boolean flag.
+     *   - If `true`, the pie chart will allow slice selection (highlighting or interaction).
+     *   - If `false`, the pie chart will display without interactive slice selection.
+     *
+     * **Outputs:**
+     * Returns a `UiDiagramSpecifier` configured to render the pie chart with:
+     * - Labels as book titles.
+     * - Dataset values as the number of times each book was borrowed.
+     *
+     * **Example usage:**
+     * Calling `buildBookPopularityPieDiagram(true)` returns a pie chart of the top 10 books with interactive slices enabled.
+     */
+    UiDiagramSpecifier buildBookPopularityPieDiagram(boolean hasSlice) {
+        // TODO 1.1.1: Create an empty Map<String, BigDecimal> named bookCounts to store book titles and their borrow counts.
+
+        // TODO 1.1.2: Execute an HQL query on MyLibraryBorrowed to retrieve:
+        // - The title of each book (joined via borrowed.bookInstance.book).
+        // - The count of borrow records per title.
+        // - Group the results by book title and order them by count descending.
+        // - Limit the results to 10 entries.
+
+        // TODO 1.1.3: Iterate over the results list:
+        // - Extract the book title and count from each row.
+        // - Convert the count to BigDecimal.
+        // - Store them in bookCounts with title as the key.
+
+        // TODO 1.1.4: Create a new UiDiagramSpecifier to define the diagram UI.
+
+        // TODO 1.1.5: In the ui block, create a pie chart with hasSlice flag.
+        // - Retrieve a sorted list of book titles from bookCounts.
+        // - Retrieve the corresponding counts in the same order.
+        // - Set the labels to "Pie".
+        // - Iterate over each title to add dataset entries with title as label and count as value.
+
+        // delete after implementation
+        return new UiDiagramSpecifier()
+    }
+
+    /**
+     * Builds a bar chart diagram showing the number of borrowed books over time.
+     *
+     * **Purpose:**
+     * Generates a bar chart visualising borrow counts grouped by request date, useful to analyse library activity over different periods (e.g. yearly, monthly, daily).
+     *
+     * **Inputs:**
+     * - `isStacked`: Boolean flag indicating if the bar chart should be stacked.
+     * - `labelDateFormat`: String specifying the date format for the x-axis labels ('YEAR', 'MONTH', 'DAY').
+     *
+     * **Outputs:**
+     * Returns a `UiDiagramSpecifier` configured to render the bar chart with:
+     * - The x-axis representing request dates.
+     * - The y-axis representing the number of borrowed books per date.
+     * - A dataset named 'Borrowed Books'.
+     */
+    UiDiagramSpecifier buildBarDiagram(boolean isStacked, String labelDateFormat) {
+        // TODO 2.1.1: Create an empty Map<Date, BigDecimal> named borrowedCounts to store request dates and their corresponding borrow counts.
+
+        // TODO 2.1.2: Execute an HQL query on MyLibraryBorrowed to retrieve:
+        // - The count of borrow records.
+        // - The request date.
+        // - Group the results by request date.
+
+        // TODO 2.1.3: Iterate over the results list:
+        // - Extract the count and date from each row.
+        // - Convert the count to BigDecimal.
+        // - Add it to borrowedCounts for that date, accumulating if already present.
+
+        // TODO 2.1.4: Create a new UiDiagramSpecifier to define the diagram UI.
+
+        // TODO 2.1.5: In the ui block, create a bar chart with isStacked flag.
+        // - Sort borrowedCounts entries by date.
+        // - Set the x-axis labels using labelDateFormat (defaulting to 'YEAR') and the sorted dates.
+        // - Add a dataset named 'Borrowed Books' with the corresponding counts.
+
+        // delete after implementation
+        return new UiDiagramSpecifier()
+    }
+
+    /**
+     * **buildBorrowDurationWhiskersDiagram**
+     *
+     * Builds a whisker diagram showing the distribution of book borrow durations.
+     *
+     * **Purpose:** Visualises how long books are borrowed for, grouped into predefined duration bins, using a whisker (box plot) diagram to illustrate the spread, quartiles, and outliers of borrow durations in the library system.
+     *
+     * **Inputs:** None.
+     *
+     * **Outputs:** Returns a `UiDiagramSpecifier` that defines the whisker diagram UI, with labels for each duration bin and statistical box data for each category.
+     *
+     * **Implementation steps:**
+     * 1. Create an empty map `borrowedDates` to store borrow durations (in days) as keys and their occurrence counts as values.
+     *
+     * 2. Define a `bins` map with keys as duration ranges ("1-3d", "4-7d", "8-14d", "15-20d", "21+d") and empty lists as values to categorise durations.
+     *
+     * 3. Execute an HQL query on `MyLibraryBorrowed` to retrieve:
+     *    - The `approvalDate` and `returnDate` for each borrowed record where both dates are not null.
+     *
+     * 4. Iterate through the query results:
+     *    - Extract `approvalDate` and `returnDate` from each row.
+     *    - Calculate the duration in days between approval and return.
+     *    - Update `borrowedDates` by incrementing the count for this duration.
+     *    - Convert the duration to `BigDecimal` and add it to the appropriate bin in `bins` based on its value.
+     *
+     * 5. Create a new `UiDiagramSpecifier` to define the whisker diagram UI.
+     *
+     * 6. Within the UI block:
+     *    - Create a `whiskers` diagram with labels set to the keys of `bins`.
+     *    - For each bin:
+     *      - If it has values:
+     *        - Sort the list and calculate the minimum, first quartile (Q1), median, third quartile (Q3), and maximum.
+     *        - Add these values as `boxData` entries, including dummy outliers if needed.
+     *      - If the bin is empty:
+     *        - Add `boxData` entries with zeros to represent no data for that bin.
+     *
+     * 7. Return the created `UiDiagramSpecifier` representing the borrow duration whisker diagram.
+     */
+    UiDiagramSpecifier buildBorrowDurationWhiskersDiagram() {
+        // TODO 3.1.1: Create an empty Map<Integer, BigDecimal> named borrowedDates to store durations (in days) and their counts.
+
+        // TODO 3.1.2: Create a Map<String, List<BigDecimal>> named bins with keys as duration ranges ("1-3d", "4-7d", "8-14d", "15-20d", "21+d") and empty lists as values.
+
+        // TODO 3.1.3: Execute an HQL query on MyLibraryBorrowed to retrieve:
+        // - approvalDate
+        // - returnDate
+        // Only include records where both dates are not null.
+
+        // TODO 3.1.4: Iterate over the query results:
+        // - Extract approvalDate and returnDate from each row.
+        // - Calculate duration in days between approvalDate and returnDate.
+        // - Update borrowedDates by incrementing the count for this duration.
+        // - Convert duration to BigDecimal and add it to the appropriate bin in bins based on value ranges.
+
+        // TODO 3.1.5: Create a new UiDiagramSpecifier to define the diagram UI.
+
+        // TODO 3.1.6: In the ui block, create a whiskers diagram:
+        // - Set labels using the keys of bins.
+        // - For each bin:
+        //   - If it contains values, sort them and calculate min, Q1, median, Q3, max. implement below for your convenience
+        //      - List<BigDecimal> sorted = values.sort()
+        //      - boxData sorted[0], sorted[(int)(sorted.size()*0.25)], sorted[(int)(sorted.size()*0.5)],
+        //                                sorted[(int)(sorted.size()*0.75)], sorted[-1],
+        //                                sorted[0], sorted[-1]
+        //   - Add boxData entries with calculated values and dummy outliers.
+        //   - If the bin is empty, add boxData entries with zeros.
+
+        // TODO 3.1.7: Return the UiDiagramSpecifier representing the borrow duration whisker diagram.
+
+        // delete after implementation
+        return new UiDiagramSpecifier()
+    }
 
 }
 

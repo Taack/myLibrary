@@ -11,6 +11,10 @@ import taack.render.TaackSaveService
 import taack.render.TaackUiService
 import taack.ui.dsl.*
 import taack.ui.dsl.common.ActionIcon
+import taack.ui.dsl.diagram.DiagramXLabelDateFormat
+
+import java.time.LocalDate
+import java.time.ZoneId
 
 /**
  * Controller responsible for all UI interactions related to authors and books
@@ -794,7 +798,7 @@ class MyLibraryController implements WebAttributes {
     def showUser(User user) {
         UiShowSpecifier showSpec = myLibraryUiService.buildUserShow(user)
         UiTableSpecifier userBorrowsSpecifier = myLibraryUiService.buildUserBorrowsTable(false, user)
-        UiFilterSpecifier userBorrowsFilterSpecifier = myLibraryUiService.buildUserBorrowsFilter()
+        UiFilterSpecifier userBorrowsFilterSpecifier = myLibraryUiService.buildUserBorrowsFilter(user)
         UiTableSpecifier userBorrowsCurrentlySpecifier = myLibraryUiService.buildUserBorrowsTable(true, user)
 
         taackUiService.show(new UiBlockSpecifier().ui {
@@ -806,5 +810,54 @@ class MyLibraryController implements WebAttributes {
         })
 
     }
+
+
+
+    /*------------------------------------------------------------*/
+    /* Diagram menu                                               */
+    /*------------------------------------------------------------*/
+
+    /**
+     * Renders the main diagrams page displaying multiple charts:
+     * - Bar diagram by date.
+     * - Borrow duration whiskers diagram.
+     * - Book popularity pie diagram.
+     * - Author distribution pie diagram.
+     *
+     * **Inputs:**
+     * - `labelDateFormat`: The date format for the bar diagram (e.g. 'YEAR', 'MONTH', 'DAY').
+     *
+     * **Outputs:** Renders a UI block displaying all diagrams with menus for changing bar diagram date grouping.
+     */
+    def listDiagrams(String labelDateFormat) {
+        UiDiagramSpecifier diagramAuthorPieSpec = myLibraryUiService.buildAuthorPieDiagram(true)
+        // TODO 2.2.1: Build diagramBarSpec by calling myLibraryUiService.buildBarDiagram(true, labelDateFormat).
+        // TODO 1.2.1: Build diagramPieSpec by calling myLibraryUiService.buildBookPopularityPieDiagram(true).
+        // TODO 3.2.1: Build durationDiagramSpec by calling myLibraryUiService.buildBorrowDurationWhiskersDiagram().
+
+        taackUiService.show(new UiBlockSpecifier().ui {
+            row {
+                col {
+                    // TODO 2.2.2:
+                    // - Add diagramBarSpec to this column by calling diagram(diagramBarSpec).
+                    // - Inside the diagram block, add three menu options:
+                    //   - A 'Yearly' menu calling this.&listDiagrams as MethodClosure with parameter [labelDateFormat: 'YEAR'].
+                    //   - A 'Monthly' menu calling this.&listDiagrams as MethodClosure with parameter [labelDateFormat: 'MONTH'].
+                    //   - A 'Daily' menu calling this.&listDiagrams as MethodClosure with parameter [labelDateFormat: 'DAY'].
+                    // - These menus allow switching the x-axis label format of the bar diagram dynamically.
+                }
+                col {
+                    // TODO 3.2.2: Add durationDiagramSpec to this column by calling diagram(durationDiagramSpec).
+                }
+                col {
+                    // TODO 1.2.2: Add diagramPieSpec to the UI by calling diagram diagramPieSpec inside this column.
+                }
+                col {
+                    diagram diagramAuthorPieSpec
+                }
+            }
+        }, myLibraryUiService.buildMenu())
+    }
+
 
 }
