@@ -848,10 +848,10 @@ class MyLibraryController implements WebAttributes {
                     diagram durationDiagramSpec
                 }
                 col {
-                    diagram diagramPieSpec
+                    diagram diagramPieSpec, {label "Book Popularity Pie"}
                 }
                 col {
-                    diagram diagramAuthorPieSpec
+                    diagram diagramAuthorPieSpec, {label "Author Popularity Pie"}
                 }
             }
         }, myLibraryUiService.buildMenu())
