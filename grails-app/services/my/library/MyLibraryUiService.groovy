@@ -1110,29 +1110,33 @@ class MyLibraryUiService implements WebAttributes {
      * Calling `buildBookPopularityPieDiagram(true)` returns a pie chart of the top 10 books with interactive slices enabled.
      */
     UiDiagramSpecifier buildBookPopularityPieDiagram(boolean hasSlice) {
-        // TODO 1.1.1: Create an empty Map<String, BigDecimal> named bookCounts to store book titles and their borrow counts.
+        Map<String, BigDecimal> bookCounts = [:]
 
-        // TODO 1.1.2: Execute an HQL query on MyLibraryBorrowed to retrieve:
-        // - The title of each book (joined via borrowed.bookInstance.book).
-        // - The count of borrow records per title.
-        // - Group the results by book title and order them by count descending.
-        // - Limit the results to 10 entries.
+        List<Object[]> results = MyLibraryBorrowed.executeQuery("""\
+        select bi.book.title, count(borrowed)
+        from MyLibraryBorrowed borrowed
+        join borrowed.bookInstance bi
+        group by bi.book.title
+        order by count(borrowed) desc
+         """, [max: 10])
 
-        // TODO 1.1.3: Iterate over the results list:
-        // - Extract the book title and count from each row.
-        // - Convert the count to BigDecimal.
-        // - Store them in bookCounts with title as the key.
+        results.each { row ->
+            String title = row[0] as String
+            Long count = row[1] as Long
+            bookCounts[title] = count.toBigDecimal()
+        }
 
-        // TODO 1.1.4: Create a new UiDiagramSpecifier to define the diagram UI.
+        new UiDiagramSpecifier().ui {
+            pie(hasSlice, {
+                List<String> titlesSorted = bookCounts.keySet().toList()
+                List<BigDecimal> counts = titlesSorted.collect { bookCounts[it] }
 
-        // TODO 1.1.5: In the ui block, create a pie chart with hasSlice flag.
-        // - Retrieve a sorted list of book titles from bookCounts.
-        // - Retrieve the corresponding counts in the same order.
-        // - Set the labels to "Pie".
-        // - Iterate over each title to add dataset entries with title as label and count as value.
-
-        // delete after implementation
-        return new UiDiagramSpecifier()
+                labels "Pie"
+                (0..<titlesSorted.size()).each { i ->
+                    dataset(titlesSorted[i], counts[i])
+                }
+            })
+        }
     }
 
     /**
@@ -1152,27 +1156,28 @@ class MyLibraryUiService implements WebAttributes {
      * - A dataset named 'Borrowed Books'.
      */
     UiDiagramSpecifier buildBarDiagram(boolean isStacked, String labelDateFormat) {
-        // TODO 2.1.1: Create an empty Map<Date, BigDecimal> named borrowedCounts to store request dates and their corresponding borrow counts.
+        Map<Date, BigDecimal> borrowedCounts = [:]
 
-        // TODO 2.1.2: Execute an HQL query on MyLibraryBorrowed to retrieve:
-        // - The count of borrow records.
-        // - The request date.
-        // - Group the results by request date.
+        List<Object[]> results1 = MyLibraryBorrowed.executeQuery("""\
+        select count(borrowed), borrowed.requestDate
+        from MyLibraryBorrowed borrowed
+        group by borrowed.requestDate
+        """)
 
-        // TODO 2.1.3: Iterate over the results list:
-        // - Extract the count and date from each row.
-        // - Convert the count to BigDecimal.
-        // - Add it to borrowedCounts for that date, accumulating if already present.
+        results1.each { row ->
+            Long count = row[0] as Long
+            Date date = row[1] as Date
+            borrowedCounts[date] = (borrowedCounts[date] ?: 0) + count.toBigDecimal()
+        }
 
-        // TODO 2.1.4: Create a new UiDiagramSpecifier to define the diagram UI.
+        new UiDiagramSpecifier().ui {
+            bar(isStacked, {
+                List<Map.Entry<Date, BigDecimal>> countsSorted = borrowedCounts.entrySet().sort { it.key }.collect { it }
 
-        // TODO 2.1.5: In the ui block, create a bar chart with isStacked flag.
-        // - Sort borrowedCounts entries by date.
-        // - Set the x-axis labels using labelDateFormat (defaulting to 'YEAR') and the sorted dates.
-        // - Add a dataset named 'Borrowed Books' with the corresponding counts.
-
-        // delete after implementation
-        return new UiDiagramSpecifier()
+                labels((labelDateFormat ?: 'YEAR') as DiagramXLabelDateFormat, countsSorted*.key as Date[]) //<1>
+                dataset('Borrowed Books', countsSorted*.value as BigDecimal[])
+            })
+        }
     }
 
     /**
@@ -1214,39 +1219,58 @@ class MyLibraryUiService implements WebAttributes {
      * 7. Return the created `UiDiagramSpecifier` representing the borrow duration whisker diagram.
      */
     UiDiagramSpecifier buildBorrowDurationWhiskersDiagram() {
-        // TODO 3.1.1: Create an empty Map<Integer, BigDecimal> named borrowedDates to store durations (in days) and their counts.
+        Map<Integer, BigDecimal> borrowedDates = [:]
+        Map<String, List<BigDecimal>> bins = [
+                "1-3d"  : [],
+                "4-7d"  : [],
+                "8-14d" : [],
+                "15-20d": [],
+                "21+d"  : []
+        ]
 
-        // TODO 3.1.2: Create a Map<String, List<BigDecimal>> named bins with keys as duration ranges ("1-3d", "4-7d", "8-14d", "15-20d", "21+d") and empty lists as values.
+        List<Object[]> results1 = MyLibraryBorrowed.executeQuery("""\
+        select borrowed.approvalDate, borrowed.returnDate
+        from MyLibraryBorrowed borrowed
+        where borrowed.approvalDate is not null and borrowed.returnDate is not null
+""")
 
-        // TODO 3.1.3: Execute an HQL query on MyLibraryBorrowed to retrieve:
-        // - approvalDate
-        // - returnDate
-        // Only include records where both dates are not null.
+        results1.each { row ->
+            Date approvalDate = row[0] as Date
+            Date returnDate = row[1] as Date
 
-        // TODO 3.1.4: Iterate over the query results:
-        // - Extract approvalDate and returnDate from each row.
-        // - Calculate duration in days between approvalDate and returnDate.
-        // - Update borrowedDates by incrementing the count for this duration.
-        // - Convert duration to BigDecimal and add it to the appropriate bin in bins based on value ranges.
+            long durationMillis = returnDate.time - approvalDate.time
+            int duration = (durationMillis / (1000 * 60 * 60 * 24)).toInteger()
+            borrowedDates[duration] = (borrowedDates[duration] ?: 0.toBigDecimal()) + 1.toBigDecimal()
+            BigDecimal durationBD = duration as BigDecimal
 
-        // TODO 3.1.5: Create a new UiDiagramSpecifier to define the diagram UI.
+            if (duration <= 3) bins["1-3d"] << durationBD
+            else if (duration <= 7) bins["4-7d"] << durationBD
+            else if (duration <= 14) bins["8-14d"] << durationBD
+            else if (duration <= 20) bins["15-20d"] << durationBD
+            else bins["21+d"] << durationBD
+        }
 
-        // TODO 3.1.6: In the ui block, create a whiskers diagram:
-        // - Set labels using the keys of bins.
-        // - For each bin:
-        //   - If it contains values, sort them and calculate min, Q1, median, Q3, max. implement below for your convenience
-        //      - List<BigDecimal> sorted = values.sort()
-        //      - boxData sorted[0], sorted[(int)(sorted.size()*0.25)], sorted[(int)(sorted.size()*0.5)],
-        //                                sorted[(int)(sorted.size()*0.75)], sorted[-1],
-        //                                sorted[0], sorted[-1]
-        //   - Add boxData entries with calculated values and dummy outliers.
-        //   - If the bin is empty, add boxData entries with zeros.
+        new UiDiagramSpecifier().ui {
+            whiskers {
+                labels bins.keySet() as String[]
 
-        // TODO 3.1.7: Return the UiDiagramSpecifier representing the borrow duration whisker diagram.
-
-        // delete after implementation
-        return new UiDiagramSpecifier()
+                dataset('Borrow Durations', {
+                    bins.each { label, values ->
+                        if (values) {
+                            List<BigDecimal> sorted = values.sort()
+                            // min, Q1, median, Q3, max + dummy outliers if needed
+                            boxData sorted[0], sorted[(int)(sorted.size()*0.25)], sorted[(int)(sorted.size()*0.5)],
+                                    sorted[(int)(sorted.size()*0.75)], sorted[-1],
+                                    sorted[0], sorted[-1]
+                        } else {
+                            boxData 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
+                        }
+                    }
+                })
+            }
+        }
     }
+
 
 }
 

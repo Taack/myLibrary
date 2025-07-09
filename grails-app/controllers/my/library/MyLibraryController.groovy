@@ -831,26 +831,24 @@ class MyLibraryController implements WebAttributes {
      */
     def listDiagrams(String labelDateFormat) {
         UiDiagramSpecifier diagramAuthorPieSpec = myLibraryUiService.buildAuthorPieDiagram(true)
-        // TODO 2.2.1: Build diagramBarSpec by calling myLibraryUiService.buildBarDiagram(true, labelDateFormat).
-        // TODO 1.2.1: Build diagramPieSpec by calling myLibraryUiService.buildBookPopularityPieDiagram(true).
-        // TODO 3.2.1: Build durationDiagramSpec by calling myLibraryUiService.buildBorrowDurationWhiskersDiagram().
+        UiDiagramSpecifier diagramBarSpec = myLibraryUiService.buildBarDiagram(true, labelDateFormat)
+        UiDiagramSpecifier diagramPieSpec = myLibraryUiService.buildBookPopularityPieDiagram(true)
+        UiDiagramSpecifier durationDiagramSpec = myLibraryUiService.buildBorrowDurationWhiskersDiagram()
 
         taackUiService.show(new UiBlockSpecifier().ui {
             row {
                 col {
-                    // TODO 2.2.2:
-                    // - Add diagramBarSpec to this column by calling diagram(diagramBarSpec).
-                    // - Inside the diagram block, add three menu options:
-                    //   - A 'Yearly' menu calling this.&listDiagrams as MethodClosure with parameter [labelDateFormat: 'YEAR'].
-                    //   - A 'Monthly' menu calling this.&listDiagrams as MethodClosure with parameter [labelDateFormat: 'MONTH'].
-                    //   - A 'Daily' menu calling this.&listDiagrams as MethodClosure with parameter [labelDateFormat: 'DAY'].
-                    // - These menus allow switching the x-axis label format of the bar diagram dynamically.
+                    diagram(diagramBarSpec, {
+                        menu 'Yearly', this.&listDiagrams as MethodClosure, [labelDateFormat: 'YEAR']
+                        menu 'Monthly', this.&listDiagrams as MethodClosure, [labelDateFormat: 'MONTH']
+                        menu 'Daily', this.&listDiagrams as MethodClosure, [labelDateFormat: 'DAY']
+                    })
                 }
                 col {
-                    // TODO 3.2.2: Add durationDiagramSpec to this column by calling diagram(durationDiagramSpec).
+                    diagram durationDiagramSpec
                 }
                 col {
-                    // TODO 1.2.2: Add diagramPieSpec to the UI by calling diagram diagramPieSpec inside this column.
+                    diagram diagramPieSpec
                 }
                 col {
                     diagram diagramAuthorPieSpec
