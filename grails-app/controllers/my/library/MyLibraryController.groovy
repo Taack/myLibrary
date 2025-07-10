@@ -872,7 +872,7 @@ class MyLibraryController implements WebAttributes {
      *
      * **Outputs:** Initiates a download of the generated PDF with filename 'LibrarySummary'.
      */
-    def downloadLibraryPdf() {
+    def downloadbinLibraryPdf() {
         UiPrintableSpecifier pdf = myLibraryUiService.buildLibraryPdf()
         taackUiPdfService.downloadPdf(pdf, 'LibrarySummary', false)
     }
