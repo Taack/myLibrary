@@ -118,9 +118,7 @@ class MyLibraryUiService implements WebAttributes {
             menu MyLibraryController.&listOfUsers as MC
             menu MyLibraryController.&listOfRequests as MC
             menu MyLibraryController.&listDiagrams as MC
-
-            // ADDED MENU ICON
-            menuIcon ActionIcon.EXPORT_PDF, MyLibraryController.&downloadBinLibraryPdf as MC
+            menuIcon ActionIcon.EXPORT_PDF, MyLibraryController.&downloadLibraryPdf as MC
         }
     }
 
@@ -1316,41 +1314,45 @@ class MyLibraryUiService implements WebAttributes {
 
         new UiPrintableSpecifier().ui {
             printableHeaderLeft('7.5cm') {
-                // TODO 1.1.1: Create a 'show' block using new UiShowSpecifier().ui:
-                // - Add a 'field' displaying the text 'Printed for' in Style.BOLD.
-                // - Below it, add another 'field' showing the current user's first and last name formatted as 'First Last'.
-                // - Display this block with BlockSpec.Width.THIRD.
-
-                // TODO 1.1.2: Create a 'show' block using new UiShowSpecifier().ui:
-                // - Add a 'field' containing HTML for a div of height 2cm and width 75%.
-                // - Inside the div, insert the logo using this.taackUiService.dumpAsset('logo-taack-web.svg').
-                // - Display this block with BlockSpec.Width.THIRD.
-
-                // TODO 1.1.3: Create a 'show' block using new UiShowSpecifier().ui:
-                // - Add a 'field' displaying the current date formatted as a string.
-                // - Apply Style.ALIGN_RIGHT to align the text to the right.
-                // - Display this block with BlockSpec.Width.THIRD.
+                show new UiShowSpecifier().ui {
+                    field Style.BOLD, 'Printed for'
+                    field """${currentUser.firstName} ${currentUser.lastName}"""
+                }, BlockSpec.Width.THIRD
+                show new UiShowSpecifier().ui {
+                    field """
+                         <div style='height: 2cm; text-align: center; width: 75%;'>
+                         ${this.taackUiService.dumpAsset('logo-taack-web.svg')}
+                         </div>
+                         """
+                }, BlockSpec.Width.THIRD
+                show new UiShowSpecifier().ui {
+                    field Style.ALIGN_RIGHT, """${new Date()}"""
+                }, BlockSpec.Width.THIRD
             }
 
             printableBody {
-                // TODO 1.2.1.1: Retrieve all authors sorted by last name using MyLibraryAuthor.list(sort: 'lastName').
-                // TODO 1.2.1.1: For each author:
-                // - Add a 'show' block displaying the author's full name as an <h2> header (use UiShowSpecifier().ui).
-                // - Add a 'table' block displaying the author's books using buildAuthorTablePdf(author), both with BlockSpec.Width.MAX.
+                List<MyLibraryAuthor> authors = MyLibraryAuthor.list(sort: 'lastName')
+                for (MyLibraryAuthor author : authors) {
+                    show new UiShowSpecifier().ui {
+                        field """<h2>${author.firstName} ${author.lastName}</h2>"""
+                    }, BlockSpec.Width.MAX
+                    table this.buildAuthorTablePdf(author), BlockSpec.Width.MAX
+                }
 
-                // TODO 1.2.2: Add an anonymousBlock with BlockSpec.Width.MAX containing:
-                // - A diagram for author pie chart calling buildAuthorPieDiagram(true).
-                // - A diagram for book popularity pie chart calling buildBookPopularityPieDiagram(true).
-                // - A diagram for bar chart calling buildBarDiagram(true, 'YEAR').
-                // - A diagram for borrow duration whiskers calling buildBorrowDurationWhiskersDiagram().
+                anonymousBlock BlockSpec.Width.MAX, {
+                    diagram buildAuthorPieDiagram(true), BlockSpec.Width.MAX
+                    diagram buildBookPopularityPieDiagram(true), BlockSpec.Width.MAX
+                    diagram buildBarDiagram(true, 'YEAR'), BlockSpec.Width.MAX
+                    diagram buildBorrowDurationWhiskersDiagram(), BlockSpec.Width.MAX
+                }
 
-                // TODO 1.2.3: Add an if condition checking if the current user has ROLE_BORROWER.
-                // - If true, add a 'table' block calling buildUserBorrowsTable(false, null, true) with BlockSpec.Width.MAX.
+                if (currentUser?.authorities?.any { it.authority == 'ROLE_BORROWER' }) {
+                    table this.buildUserBorrowsTable(false, null, true), BlockSpec.Width.MAX
+                }
             }
             printableFooter {}
         }
     }
-
 
 }
 
