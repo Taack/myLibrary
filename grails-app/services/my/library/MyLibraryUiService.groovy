@@ -118,7 +118,7 @@ class MyLibraryUiService implements WebAttributes {
             menu MyLibraryController.&listOfUsers as MC
             menu MyLibraryController.&listOfRequests as MC
             menu MyLibraryController.&listDiagrams as MC
-            menuIcon ActionIcon.EXPORT_PDF, MyLibraryController.&downloadbinLibraryPdf as MC
+            menuIcon ActionIcon.EXPORT_PDF, MyLibraryController.&downloadBinLibraryPdf as MC
         }
     }
 
