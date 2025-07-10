@@ -8,6 +8,7 @@ import grails.plugin.springsecurity.annotation.Secured
 import grails.web.api.WebAttributes
 import org.codehaus.groovy.runtime.MethodClosure
 import taack.render.TaackSaveService
+import taack.render.TaackUiPdfService
 import taack.render.TaackUiService
 import taack.ui.dsl.*
 import taack.ui.dsl.common.ActionIcon
@@ -42,6 +43,7 @@ class MyLibraryController implements WebAttributes {
     MyLibraryUiService myLibraryUiService
     TaackSaveService taackSaveService
     SpringSecurityService springSecurityService
+    TaackUiPdfService taackUiPdfService
 
     User currentUser
     boolean isAdmin = false
@@ -857,5 +859,15 @@ class MyLibraryController implements WebAttributes {
         }, myLibraryUiService.buildMenu())
     }
 
+
+    /*------------------------------------------------------------*/
+    /* Pdf menu                                                   */
+    /*------------------------------------------------------------*/
+
+    def downloadLibraryPdf() {
+        UiPrintableSpecifier pdf = myLibraryUiService.buildLibraryPdf()
+        taackUiPdfService.downloadPdf(pdf, 'LibrarySummary', false)
+    }
+    // menuIcon(ActionIcon.EXPORT_PDF, this.&downloadBinPdf2 as MC)
 
 }

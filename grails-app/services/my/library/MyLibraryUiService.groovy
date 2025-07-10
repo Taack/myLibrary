@@ -13,12 +13,14 @@ import taack.ast.annotation.TaackFieldEnum
 import taack.ast.type.FieldInfo
 import taack.ast.type.GetMethodReturn
 import taack.domain.TaackFilterService
+import taack.render.TaackUiService
 import taack.ui.dsl.UiDiagramSpecifier
 import taack.ui.dsl.UiFilterSpecifier
 import taack.ui.dsl.UiFormSpecifier
 import taack.ui.dsl.UiMenuSpecifier
 import taack.app.TaackApp
 import taack.app.TaackAppRegisterService
+import taack.ui.dsl.UiPrintableSpecifier
 import taack.ui.dsl.UiShowSpecifier
 import taack.ui.dsl.UiTableSpecifier
 import taack.ui.dsl.block.BlockSpec
@@ -27,14 +29,16 @@ import taack.ui.dsl.filter.expression.FilterExpression
 import taack.domain.TaackFilter
 import taack.ui.dsl.common.ActionIcon
 import taack.ui.dsl.common.IconStyle
+import taack.ui.dsl.common.Style
 
 import javax.swing.Icon
 import java.lang.reflect.Field
 import java.time.LocalDate
 import java.time.ZoneId
 
-import static taack.render.TaackUiService.tr
+
 import taack.ui.dsl.filter.expression.Operator
+import static taack.render.TaackUiService.tr
 
 /**
  * UI Service responsible for constructing all UI components (menus, tables, filters, forms)
@@ -61,6 +65,7 @@ import taack.ui.dsl.filter.expression.Operator
 class MyLibraryUiService implements WebAttributes {
     TaackFilterService taackFilterService
     SpringSecurityService springSecurityService
+    TaackUiService taackUiService
 
     static lazyInit = false
     /**
@@ -73,7 +78,6 @@ class MyLibraryUiService implements WebAttributes {
      */
     @PostConstruct
     void init() {
-        //TODO chose icon of your choice and add the icon to app/myLibrary/src/resources/myLibrary
         TaackAppRegisterService.register(new TaackApp(MyLibraryController.&index as MC, new String(this.class.getResourceAsStream("/myLibrary/library-svgrepo-com.svg").readAllBytes())))
     }
 
@@ -125,9 +129,10 @@ class MyLibraryUiService implements WebAttributes {
             menu MyLibraryController.&listBooksCurrentlyBorrowed as MC
             menu MyLibraryController.&listOfUsers as MC
             menu MyLibraryController.&listOfRequests as MC
-
-            //ADDED MENUS
             menu MyLibraryController.&listDiagrams as MC
+
+            // ADDED MENU icon
+            menuIcon ActionIcon.EXPORT_PDF, MyLibraryController.&downloadLibraryPdf as MC
         }
     }
 
@@ -1271,8 +1276,95 @@ class MyLibraryUiService implements WebAttributes {
         }
     }
 
+    /*------------------------------------------------------------*/
+    /* Pdf Menu                                                   */
+    /*------------------------------------------------------------*/
+
+
+    /**
+     * Builds a PDF specifier showing:
+     * - Header with current user info and logo.
+     * - Body containing all authors with their books and number of instances.
+     * - Footer with branding.
+     *
+     * @return UiPrintableSpecifier ready for rendering and download.
+     */
+    UiPrintableSpecifier buildLibraryPdf() {
+        User currentUser = springSecurityService.currentUser as User
+
+        new UiPrintableSpecifier().ui {
+            // ---------- Header ----------
+            printableHeaderLeft('7.5cm') {
+                show new UiShowSpecifier().ui {
+                    field Style.BOLD, 'Printed for'
+                    field """${currentUser.firstName} ${currentUser.lastName}"""
+                }, BlockSpec.Width.THIRD
+                show new UiShowSpecifier().ui {
+                    field """
+                        <div style='height: 2cm; text-align: center; width: 75%;'>
+                            ${this.taackUiService.dumpAsset('logo-taack-web.svg')}
+                        </div>
+                    """
+                }, BlockSpec.Width.THIRD
+                show new UiShowSpecifier().ui {
+                    field Style.ALIGN_RIGHT, """${new Date()}"""
+                }, BlockSpec.Width.THIRD
+            }
+
+            // ---------- Body ----------
+            printableBody {
+                // List all authors with their books
+                List<MyLibraryAuthor> authors = MyLibraryAuthor.list(sort: 'lastName')
+                for (MyLibraryAuthor author : authors) {
+                    show new UiShowSpecifier().ui {
+                        field """<h2>${author.firstName} ${author.lastName}</h2>"""
+                    }, BlockSpec.Width.MAX
+
+                    table(new UiTableSpecifier().ui {
+                        header {
+                            label 'Title'
+                            label 'Description'
+                            label 'Pages'
+                            label 'Number of Instances'
+                        }
+                        for (MyLibraryBook book : author.listOfBooks) {
+                            row {
+                                rowField book.title
+                                rowField book.description
+                                rowField book.numberOfPages.toString()
+                                rowField book.getNumberOfInstances().toString()
+                            }
+                        }
+                    }, BlockSpec.Width.MAX)
+                }
+
+
+                anonymousBlock BlockSpec.Width.MAX, {
+                    diagram buildAuthorPieDiagram(true), BlockSpec.Width.MAX
+                    diagram buildBookPopularityPieDiagram(true), BlockSpec.Width.MAX
+                    diagram buildBarDiagram(true, 'YEAR'), BlockSpec.Width.MAX
+                    diagram buildBorrowDurationWhiskersDiagram(), BlockSpec.Width.MAX
+                }
+
+                if (currentUser?.authorities?.any { it.authority == 'ROLE_BORROWER' }) {
+                    table this.buildUserBorrowsTable(false, null, true), BlockSpec.Width.MAX
+                }
+            }
+
+                // ---------- Footer ----------
+            printableFooter {
+                show new UiShowSpecifier().ui {
+                    field '<b>MyLibrary</b> Powered'
+                }, BlockSpec.Width.MAX
+            }
+
+        }
+    }
 
 }
+
+
+
 
 
 
