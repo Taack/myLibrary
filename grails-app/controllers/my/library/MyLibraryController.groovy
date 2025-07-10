@@ -1,5 +1,6 @@
 package my.library
 
+import attachment.Attachment
 import crew.User
 import grails.compiler.GrailsCompileStatic
 import grails.gorm.transactions.Transactional
@@ -7,15 +8,13 @@ import grails.plugin.springsecurity.SpringSecurityService
 import grails.plugin.springsecurity.annotation.Secured
 import grails.web.api.WebAttributes
 import org.codehaus.groovy.runtime.MethodClosure
+import org.grails.web.servlet.mvc.GrailsWebRequest
+import org.grails.web.util.WebUtils
 import taack.render.TaackSaveService
 import taack.render.TaackUiPdfService
 import taack.render.TaackUiService
 import taack.ui.dsl.*
 import taack.ui.dsl.common.ActionIcon
-import taack.ui.dsl.diagram.DiagramXLabelDateFormat
-
-import java.time.LocalDate
-import java.time.ZoneId
 
 /**
  * Controller responsible for all UI interactions related to authors and books
@@ -864,10 +863,22 @@ class MyLibraryController implements WebAttributes {
     /* Pdf menu                                                   */
     /*------------------------------------------------------------*/
 
+    /**
+     * Downloads the library summary as a PDF file.
+     *
+     * **Purpose:** Generates the library PDF report and triggers its download for the user.
+     *
+     * **Inputs:** None.
+     *
+     * **Outputs:** Initiates a download of the generated PDF with filename 'LibrarySummary'.
+     */
     def downloadLibraryPdf() {
-        UiPrintableSpecifier pdf = myLibraryUiService.buildLibraryPdf()
-        taackUiPdfService.downloadPdf(pdf, 'LibrarySummary', false)
+        // TODO 2.1: Call myLibraryUiService.buildLibraryPdf() to generate the PDF content as a UiPrintableSpecifier and store it in a variable named pdf.
+
+        // TODO 2.2: Call taackUiPdfService.downloadPdf(), passing:
+        // - The generated pdf.
+        // - The desired filename as 'LibrarySummary'.
+        // - The boolean flag set to false to indicate inline viewing is disabled (forces download).
     }
-    // menuIcon(ActionIcon.EXPORT_PDF, this.&downloadBinPdf2 as MC)
 
 }

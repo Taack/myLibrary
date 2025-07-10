@@ -4,14 +4,9 @@ import crew.User
 import grails.compiler.GrailsCompileStatic
 import grails.plugin.springsecurity.SpringSecurityService
 import grails.plugin.springsecurity.annotation.Secured
-import grails.validation.Validateable
 import grails.web.api.WebAttributes
 import jakarta.annotation.PostConstruct
-import org.codehaus.groovy.runtime.MethodClosure
 import org.codehaus.groovy.runtime.MethodClosure as MC
-import taack.ast.annotation.TaackFieldEnum
-import taack.ast.type.FieldInfo
-import taack.ast.type.GetMethodReturn
 import taack.domain.TaackFilterService
 import taack.render.TaackUiService
 import taack.ui.dsl.UiDiagramSpecifier
@@ -30,13 +25,6 @@ import taack.domain.TaackFilter
 import taack.ui.dsl.common.ActionIcon
 import taack.ui.dsl.common.IconStyle
 import taack.ui.dsl.common.Style
-
-import javax.swing.Icon
-import java.lang.reflect.Field
-import java.time.LocalDate
-import java.time.ZoneId
-
-
 import taack.ui.dsl.filter.expression.Operator
 import static taack.render.TaackUiService.tr
 
@@ -131,8 +119,8 @@ class MyLibraryUiService implements WebAttributes {
             menu MyLibraryController.&listOfRequests as MC
             menu MyLibraryController.&listDiagrams as MC
 
-            // ADDED MENU icon
-            menuIcon ActionIcon.EXPORT_PDF, MyLibraryController.&downloadLibraryPdf as MC
+            // ADDED MENU ICON
+            menuIcon ActionIcon.EXPORT_PDF, MyLibraryController.&downloadBinLibraryPdf as MC
         }
     }
 
@@ -1283,86 +1271,86 @@ class MyLibraryUiService implements WebAttributes {
     /*------------------------------------------------------------*/
 
 
+    UiTableSpecifier buildAuthorTablePdf(MyLibraryAuthor author) {
+        new UiTableSpecifier().ui {
+            header {
+                label 'Title'
+                label 'Description'
+                label 'Pages'
+                label 'Number of Instances'
+            }
+            for (MyLibraryBook book : author.listOfBooks) {
+                row {
+                    rowField book.title
+                    rowField book.description
+                    rowField book.numberOfPages.toString()
+                    rowField book.getNumberOfInstances().toString()
+                }
+            }
+        }
+    }
+
     /**
-     * Builds a PDF specifier showing:
-     * - Header with current user info and logo.
-     * - Body containing all authors with their books and number of instances.
-     * - Footer with branding.
+     * Builds a printable PDF report of the library data.
      *
-     * @return UiPrintableSpecifier ready for rendering and download.
+     * **Purpose:** Generates a PDF containing:
+     * - A header with user information and logo.
+     * - A body listing all authors with their books.
+     * - Multiple diagrams summarising library statistics.
+     * - (For borrowers) A table of their borrow history.
+     *
+     * **Inputs:** None explicitly (uses current authenticated user via `springSecurityService`).
+     *
+     * **Outputs:** Returns a `UiPrintableSpecifier` representing the full printable PDF UI.
+     *
+     * **Implementation steps:**
+     * 1. Retrieve the current user with `springSecurityService.currentUser`.
+     * 2. Create a new `UiPrintableSpecifier` and define its UI structure with a header, body, and footer.
+     * 3. In the header, display user info, logo, and date.
+     * 4. In the body, display authors with their books and add summary diagrams.
+     * 5. Display borrower-specific borrow history if applicable.
+     * 6. Footer is currently commented out but available for future use.
      */
     UiPrintableSpecifier buildLibraryPdf() {
         User currentUser = springSecurityService.currentUser as User
 
         new UiPrintableSpecifier().ui {
-            // ---------- Header ----------
             printableHeaderLeft('7.5cm') {
-                show new UiShowSpecifier().ui {
-                    field Style.BOLD, 'Printed for'
-                    field """${currentUser.firstName} ${currentUser.lastName}"""
-                }, BlockSpec.Width.THIRD
-                show new UiShowSpecifier().ui {
-                    field """
-                        <div style='height: 2cm; text-align: center; width: 75%;'>
-                            ${this.taackUiService.dumpAsset('logo-taack-web.svg')}
-                        </div>
-                    """
-                }, BlockSpec.Width.THIRD
-                show new UiShowSpecifier().ui {
-                    field Style.ALIGN_RIGHT, """${new Date()}"""
-                }, BlockSpec.Width.THIRD
+                // TODO 1.1.1: Create a 'show' block using new UiShowSpecifier().ui:
+                // - Add a 'field' displaying the text 'Printed for' in Style.BOLD.
+                // - Below it, add another 'field' showing the current user's first and last name formatted as 'First Last'.
+                // - Display this block with BlockSpec.Width.THIRD.
+
+                // TODO 1.1.2: Create a 'show' block using new UiShowSpecifier().ui:
+                // - Add a 'field' containing HTML for a div of height 2cm and width 75%.
+                // - Inside the div, insert the logo using this.taackUiService.dumpAsset('logo-taack-web.svg').
+                // - Display this block with BlockSpec.Width.THIRD.
+
+                // TODO 1.1.3: Create a 'show' block using new UiShowSpecifier().ui:
+                // - Add a 'field' displaying the current date formatted as a string.
+                // - Apply Style.ALIGN_RIGHT to align the text to the right.
+                // - Display this block with BlockSpec.Width.THIRD.
             }
 
-            // ---------- Body ----------
             printableBody {
-                // List all authors with their books
-                List<MyLibraryAuthor> authors = MyLibraryAuthor.list(sort: 'lastName')
-                for (MyLibraryAuthor author : authors) {
-                    show new UiShowSpecifier().ui {
-                        field """<h2>${author.firstName} ${author.lastName}</h2>"""
-                    }, BlockSpec.Width.MAX
+                // TODO 1.2.1.1: Retrieve all authors sorted by last name using MyLibraryAuthor.list(sort: 'lastName').
+                // TODO 1.2.1.1: For each author:
+                // - Add a 'show' block displaying the author's full name as an <h2> header (use UiShowSpecifier().ui).
+                // - Add a 'table' block displaying the author's books using buildAuthorTablePdf(author), both with BlockSpec.Width.MAX.
 
+                // TODO 1.2.2: Add an anonymousBlock with BlockSpec.Width.MAX containing:
+                // - A diagram for author pie chart calling buildAuthorPieDiagram(true).
+                // - A diagram for book popularity pie chart calling buildBookPopularityPieDiagram(true).
+                // - A diagram for bar chart calling buildBarDiagram(true, 'YEAR').
+                // - A diagram for borrow duration whiskers calling buildBorrowDurationWhiskersDiagram().
 
-                    table(new UiTableSpecifier().ui {
-                        header {
-                            label 'Title'
-                            label 'Description'
-                            label 'Pages'
-                            label 'Number of Instances'
-                        }
-                        for (MyLibraryBook book : author.listOfBooks) {
-                            row {
-                                rowField book.title
-                                rowField book.description
-                                rowField book.numberOfPages.toString()
-                                rowField book.getNumberOfInstances().toString()
-                            }
-                        }
-                    }, BlockSpec.Width.MAX)
-                }
-
-
-                anonymousBlock BlockSpec.Width.MAX, {
-                    diagram buildAuthorPieDiagram(true), BlockSpec.Width.MAX
-                    diagram buildBookPopularityPieDiagram(true), BlockSpec.Width.MAX
-                    diagram buildBarDiagram(true, 'YEAR'), BlockSpec.Width.MAX
-                    diagram buildBorrowDurationWhiskersDiagram(), BlockSpec.Width.MAX
-                }
-
-                if (currentUser?.authorities?.any { it.authority == 'ROLE_BORROWER' }) {
-                    table this.buildUserBorrowsTable(false, null, true), BlockSpec.Width.MAX
-                }
+                // TODO 1.2.3: Add an if condition checking if the current user has ROLE_BORROWER.
+                // - If true, add a 'table' block calling buildUserBorrowsTable(false, null, true) with BlockSpec.Width.MAX.
             }
-
-                // ---------- Footer ----------
-            printableFooter {
-                show new UiShowSpecifier().ui {
-                    field '<b>MyLibrary</b> Powered'
-                }, BlockSpec.Width.MAX
-            }
-
+            printableFooter {}
         }
     }
+
 
 }
 
