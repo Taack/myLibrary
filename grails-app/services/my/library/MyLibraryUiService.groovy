@@ -120,7 +120,7 @@ class MyLibraryUiService implements WebAttributes {
             menu MyLibraryController.&listDiagrams as MC
 
             // ADDED MENU ICON
-            menuIcon ActionIcon.EXPORT_PDF, MyLibraryController.&downloadBinLibraryPdf as MC
+            menuIcon ActionIcon.EXPORT_PDF, MyLibraryController.&downloadLibraryPdf as MC
         }
     }
 
