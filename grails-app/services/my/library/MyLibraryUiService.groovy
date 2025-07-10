@@ -73,7 +73,6 @@ class MyLibraryUiService implements WebAttributes {
      */
     @PostConstruct
     void init() {
-        //TODO chose icon of your choice and add the icon to app/myLibrary/src/resources/myLibrary
         TaackAppRegisterService.register(new TaackApp(MyLibraryController.&index as MC, new String(this.class.getResourceAsStream("/myLibrary/library-svgrepo-com.svg").readAllBytes())))
     }
 
