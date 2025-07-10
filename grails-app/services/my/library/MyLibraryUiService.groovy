@@ -764,6 +764,7 @@ class MyLibraryUiService implements WebAttributes {
                 if (isCurrently) {label borrowed.statusOfApproval_}
                 label borrowed.requestDate_
                 label borrowed.approvalDate_
+                if (!isCurrently) label borrowed.returnDate_
                 if (isCurrently  && !isAdmin) column {label "Return Book"}
                 if(isAdmin) {
                     column { label borrowed.user_ }
@@ -796,6 +797,7 @@ class MyLibraryUiService implements WebAttributes {
                 if(isCurrently) {rowField borrowedIterator.statusOfApproval_}
                 rowField borrowedIterator.requestDate_
                 rowField borrowedIterator.approvalDate_
+                if (!isCurrently) rowField borrowedIterator.returnDate_
                 if (isCurrently && !isAdmin) {
                     rowColumn {
                         if (borrowedIterator.statusOfApproval == ApprovalStatus.APPROVED) {
@@ -1319,6 +1321,7 @@ class MyLibraryUiService implements WebAttributes {
                     show new UiShowSpecifier().ui {
                         field """<h2>${author.firstName} ${author.lastName}</h2>"""
                     }, BlockSpec.Width.MAX
+
 
                     table(new UiTableSpecifier().ui {
                         header {

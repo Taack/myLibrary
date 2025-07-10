@@ -205,7 +205,7 @@ class MyLibraryDataController {
                 [firstName: 'Jack', lastName: 'Gray', dob: '1974-12-08'],
         ]
 
-        List<MyLibraryAuthor> authors = []
+
 
         authorData.each { data ->
             MyLibraryAuthor author = MyLibraryAuthor.findByFirstNameAndLastName(data.firstName as String, data.lastName as String)
@@ -217,7 +217,6 @@ class MyLibraryDataController {
                         listOfBooks: []
                 )
                 author.save(flush: true)
-                authors << author
                 println "Created author: ${author.firstName} ${author.lastName} with errors:=${author.errors}"
             } else {
                 println "Author: ${author.firstName} ${author.lastName} already created"
@@ -279,6 +278,8 @@ class MyLibraryDataController {
                 [title:"David Copperfield", description:"A semi-autobiographical novel of personal growth.", numberOfPages: "624"],
                 [title:"Bleak House", description:"A satirical novel about the flaws of the legal system.", numberOfPages: "768"],
         ]
+
+        List<MyLibraryAuthor> authors = MyLibraryAuthor.list()
 
         booksData.eachWithIndex { data, index ->
             MyLibraryAuthor author = authors[random.nextInt(authors.size())]
@@ -424,6 +425,7 @@ class MyLibraryDataController {
                 // Random user
                 User user = borrowerUsers[random.nextInt(borrowerUsers.size())]
 
+
                 // Create borrowed entry
                 MyLibraryBorrowed borrowed = new MyLibraryBorrowed(
                         bookInstance: instance,
@@ -439,7 +441,6 @@ class MyLibraryDataController {
             }
             println "Created ${borrowCount} borrowed entries for bookInstance id=${instance.id}"
         }
-
         redirect controller:'myLibrary', action:'listAuthor'
     }
 }
