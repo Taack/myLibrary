@@ -149,13 +149,22 @@ class MyLibrarySecurityService {
     void init() {
         TaackUiEnablerService.securityClosure(
                 this.&securityClosure,
-                MyLibraryController.&saveAuthor as MethodClosure,
+                MyLibraryController.&createAuthor as MethodClosure,
                 MyLibraryController.&deleteAuthor as MethodClosure,
                 MyLibraryController.&activateAuthor as MethodClosure,
-                MyLibraryController.&saveBook as MethodClosure,
+                MyLibraryController.&saveAuthor as MethodClosure,
+                MyLibraryController.&selectAuthor as MethodClosure,
+                MyLibraryController.&createBook as MethodClosure,
+                MyLibraryController.&purchaseBook as MethodClosure,
                 MyLibraryController.&purchaseAndSaveBook as MethodClosure,
+                MyLibraryController.&saveBook as MethodClosure,
+                MyLibraryController.&selectBookInstance as MethodClosure,
                 MyLibraryController.&deleteBookInstances as MethodClosure,
+                MyLibraryController.&approveBook as MethodClosure,
                 MyLibraryController.&saveApprovalBookForm as MethodClosure,
+                MyLibraryController.&listOfRequests as MethodClosure,
+                MyLibraryController.&listOfUsers as MethodClosure,
+                MyLibraryController.&showUser as MethodClosure,
         )
 
         TaackUiEnablerService.securityClosure(
